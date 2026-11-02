@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.TollWire/evidence-mcp",
+  "title": "TollWire Evidence",
+  "description": "Tamper-evident evidence log of agent changes, scans and approvals, mapped to ISO 27001/NIS2.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/TollWire/tollwire",
+    "source": "github",
+    "subfolder": "evidence-mcp"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@tollwire/evidence-mcp",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

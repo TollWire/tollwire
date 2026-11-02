@@ -1,0 +1,27 @@
+{
+  "name": "tollwire",
+  "owner": { "name": "TollWire", "url": "https://github.com/TollWire" },
+  "description": "TollWire adds a policy enforcement layer to AI coding agents: it checks file writes, shell commands and new dependencies before they run, blocks detected violations, and keeps a tamper-evident log of reported changes, scans and approvals as evidence supporting ISO 27001 and NIS2 audits. TollWire itself runs locally and sends no data anywhere.",
+  "plugins": [
+    {
+      "name": "tollwire-guardrail",
+      "source": {
+        "source": "npm",
+        "package": "@tollwire/guardrail-plugin",
+        "version": "0.1.0",
+        "registry": "https://registry.npmjs.org"
+      },
+      "description": "Blocks writes to protected paths, dangerous shell commands and non-allowlisted dependencies; exposes the same checks as MCP tools."
+    },
+    {
+      "name": "tollwire-evidence",
+      "source": {
+        "source": "npm",
+        "package": "@tollwire/evidence-mcp",
+        "version": "0.1.0",
+        "registry": "https://registry.npmjs.org"
+      },
+      "description": "Tamper-evident evidence log for reported agent changes, scans and approvals, mapped to ISO 27001 / NIS2 controls (draft mapping)."
+    }
+  ]
+}

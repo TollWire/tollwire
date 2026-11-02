@@ -1,0 +1,83 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D=0; if [ \"$(/usr/bin/uname -s 2>/dev/null)\" = Darwin ]; then D=1; fi; TG=0; if [ -d /etc/tollgate ] || [ -d \"/Library/Application Support/TollGate\" ] || [ \"$TOLLGATE_ENTERPRISE\" = 1 ]; then TG=1; fi; N=node; if [ \"$TG\" = 1 ]; then N=; if [ \"$D\" = 1 ]; then if [ -x \"/Library/Application Support/TollGate/node/bin/node\" ]; then N=\"/Library/Application Support/TollGate/node/bin/node\"; fi; else for c in /opt/tollgate/node/bin/node \"/Library/Application Support/TollGate/node/bin/node\" /usr/bin/node; do if [ -x \"$c\" ]; then N=$c; break; fi; done; fi; fi; T=; for t in /usr/bin/timeout /bin/timeout; do if [ -x \"$t\" ]; then T=\"$t 25\"; break; fi; done; if [ -z \"$N\" ]; then echo \"TollGate guardrail: enterprise mode, but no system Node was found; fail closed.\" >&2; exit 2; fi; set -- CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\"; if [ \"$TG\" != 1 ]; then for v in HOME TMPDIR TOLLGATE_POLICY XDG_STATE_HOME XDG_CONFIG_HOME PATH; do case $v in HOME) x=$HOME;; TMPDIR) x=$TMPDIR;; TOLLGATE_POLICY) x=$TOLLGATE_POLICY;; XDG_STATE_HOME) x=$XDG_STATE_HOME;; XDG_CONFIG_HOME) x=$XDG_CONFIG_HOME;; PATH) x=$PATH;; esac; if [ -n \"$x\" ]; then set -- \"$@\" \"$v=$x\"; fi; done; fi; if [ \"$D\" = 1 ] && [ \"$TG\" = 1 ]; then /usr/bin/env -i CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event PreToolUse; elif [ -z \"$T\" ]; then /usr/bin/env -i \"$@\" \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event PreToolUse; else /usr/bin/env -i \"$@\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCli.js\" --event PreToolUse; fi; rc=$?; if [ \"$rc\" -eq 0 ] || [ \"$rc\" -eq 2 ]; then exit \"$rc\"; fi; echo \"TollGate guardrail: hook did not run or timed out (exit $rc); fail closed.\" >&2; exit 2",
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "^(?!(?:Bash|Edit|Write|MultiEdit|NotebookEdit)$).+",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D=0; if [ \"$(/usr/bin/uname -s 2>/dev/null)\" = Darwin ]; then D=1; fi; TG=0; if [ -d /etc/tollgate ] || [ -d \"/Library/Application Support/TollGate\" ] || [ \"$TOLLGATE_ENTERPRISE\" = 1 ]; then TG=1; fi; N=node; if [ \"$TG\" = 1 ]; then N=; if [ \"$D\" = 1 ]; then if [ -x \"/Library/Application Support/TollGate/node/bin/node\" ]; then N=\"/Library/Application Support/TollGate/node/bin/node\"; fi; else for c in /opt/tollgate/node/bin/node \"/Library/Application Support/TollGate/node/bin/node\" /usr/bin/node; do if [ -x \"$c\" ]; then N=$c; break; fi; done; fi; fi; T=; for t in /usr/bin/timeout /bin/timeout; do if [ -x \"$t\" ]; then T=\"$t 25\"; break; fi; done; set -- CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\"; if [ \"$TG\" != 1 ]; then for v in HOME TMPDIR TOLLGATE_POLICY XDG_STATE_HOME XDG_CONFIG_HOME PATH; do case $v in HOME) x=$HOME;; TMPDIR) x=$TMPDIR;; TOLLGATE_POLICY) x=$TOLLGATE_POLICY;; XDG_STATE_HOME) x=$XDG_STATE_HOME;; XDG_CONFIG_HOME) x=$XDG_CONFIG_HOME;; PATH) x=$PATH;; esac; if [ -n \"$x\" ]; then set -- \"$@\" \"$v=$x\"; fi; done; fi; if [ \"$D\" = 1 ] && [ \"$TG\" = 1 ]; then /usr/bin/env -i CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event PreToolUse; elif [ -z \"$T\" ]; then /usr/bin/env -i \"$@\" \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event PreToolUse; else /usr/bin/env -i \"$@\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCli.js\" --event PreToolUse; fi; rc=$?; if [ \"$rc\" -eq 0 ]; then exit 0; fi; if [ \"$rc\" -eq 42 ]; then exit 2; fi; if [ \"$TG\" = 1 ]; then echo \"TollGate guardrail: hook did not run or timed out (exit $rc); fail closed in enterprise mode.\" >&2; exit 2; fi; if [ \"$rc\" -ne 0 ]; then echo \"TollGate guardrail: hook did not run or timed out (exit $rc); not blocking this event.\" >&2; fi; exit 0",
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D=0; if [ \"$(/usr/bin/uname -s 2>/dev/null)\" = Darwin ]; then D=1; fi; TG=0; if [ -d /etc/tollgate ] || [ -d \"/Library/Application Support/TollGate\" ] || [ \"$TOLLGATE_ENTERPRISE\" = 1 ]; then TG=1; fi; N=node; if [ \"$TG\" = 1 ]; then N=; if [ \"$D\" = 1 ]; then if [ -x \"/Library/Application Support/TollGate/node/bin/node\" ]; then N=\"/Library/Application Support/TollGate/node/bin/node\"; fi; else for c in /opt/tollgate/node/bin/node \"/Library/Application Support/TollGate/node/bin/node\" /usr/bin/node; do if [ -x \"$c\" ]; then N=$c; break; fi; done; fi; fi; T=; for t in /usr/bin/timeout /bin/timeout; do if [ -x \"$t\" ]; then T=\"$t 25\"; break; fi; done; set -- CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\"; if [ \"$TG\" != 1 ]; then for v in HOME TMPDIR TOLLGATE_POLICY XDG_STATE_HOME XDG_CONFIG_HOME PATH; do case $v in HOME) x=$HOME;; TMPDIR) x=$TMPDIR;; TOLLGATE_POLICY) x=$TOLLGATE_POLICY;; XDG_STATE_HOME) x=$XDG_STATE_HOME;; XDG_CONFIG_HOME) x=$XDG_CONFIG_HOME;; PATH) x=$PATH;; esac; if [ -n \"$x\" ]; then set -- \"$@\" \"$v=$x\"; fi; done; fi; if [ \"$D\" = 1 ] && [ \"$TG\" = 1 ]; then /usr/bin/env -i CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event SessionStart; elif [ -z \"$T\" ]; then /usr/bin/env -i \"$@\" \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event SessionStart; else /usr/bin/env -i \"$@\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCli.js\" --event SessionStart; fi; rc=$?; if [ \"$rc\" -ne 0 ]; then echo \"TollGate guardrail: hook did not run or timed out (exit $rc); not blocking this event.\" >&2; fi; exit 0",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D=0; if [ \"$(/usr/bin/uname -s 2>/dev/null)\" = Darwin ]; then D=1; fi; TG=0; if [ -d /etc/tollgate ] || [ -d \"/Library/Application Support/TollGate\" ] || [ \"$TOLLGATE_ENTERPRISE\" = 1 ]; then TG=1; fi; N=node; if [ \"$TG\" = 1 ]; then N=; if [ \"$D\" = 1 ]; then if [ -x \"/Library/Application Support/TollGate/node/bin/node\" ]; then N=\"/Library/Application Support/TollGate/node/bin/node\"; fi; else for c in /opt/tollgate/node/bin/node \"/Library/Application Support/TollGate/node/bin/node\" /usr/bin/node; do if [ -x \"$c\" ]; then N=$c; break; fi; done; fi; fi; T=; for t in /usr/bin/timeout /bin/timeout; do if [ -x \"$t\" ]; then T=\"$t 25\"; break; fi; done; set -- CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\"; if [ \"$TG\" != 1 ]; then for v in HOME TMPDIR TOLLGATE_POLICY XDG_STATE_HOME XDG_CONFIG_HOME PATH; do case $v in HOME) x=$HOME;; TMPDIR) x=$TMPDIR;; TOLLGATE_POLICY) x=$TOLLGATE_POLICY;; XDG_STATE_HOME) x=$XDG_STATE_HOME;; XDG_CONFIG_HOME) x=$XDG_CONFIG_HOME;; PATH) x=$PATH;; esac; if [ -n \"$x\" ]; then set -- \"$@\" \"$v=$x\"; fi; done; fi; if [ \"$D\" = 1 ] && [ \"$TG\" = 1 ]; then /usr/bin/env -i CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event SessionEnd; elif [ -z \"$T\" ]; then /usr/bin/env -i \"$@\" \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event SessionEnd; else /usr/bin/env -i \"$@\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCli.js\" --event SessionEnd; fi; rc=$?; if [ \"$rc\" -ne 0 ]; then echo \"TollGate guardrail: hook did not run or timed out (exit $rc); not blocking this event.\" >&2; fi; exit 0",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D=0; if [ \"$(/usr/bin/uname -s 2>/dev/null)\" = Darwin ]; then D=1; fi; TG=0; if [ -d /etc/tollgate ] || [ -d \"/Library/Application Support/TollGate\" ] || [ \"$TOLLGATE_ENTERPRISE\" = 1 ]; then TG=1; fi; N=node; if [ \"$TG\" = 1 ]; then N=; if [ \"$D\" = 1 ]; then if [ -x \"/Library/Application Support/TollGate/node/bin/node\" ]; then N=\"/Library/Application Support/TollGate/node/bin/node\"; fi; else for c in /opt/tollgate/node/bin/node \"/Library/Application Support/TollGate/node/bin/node\" /usr/bin/node; do if [ -x \"$c\" ]; then N=$c; break; fi; done; fi; fi; T=; for t in /usr/bin/timeout /bin/timeout; do if [ -x \"$t\" ]; then T=\"$t 25\"; break; fi; done; set -- CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\"; if [ \"$TG\" != 1 ]; then for v in HOME TMPDIR TOLLGATE_POLICY XDG_STATE_HOME XDG_CONFIG_HOME PATH; do case $v in HOME) x=$HOME;; TMPDIR) x=$TMPDIR;; TOLLGATE_POLICY) x=$TOLLGATE_POLICY;; XDG_STATE_HOME) x=$XDG_STATE_HOME;; XDG_CONFIG_HOME) x=$XDG_CONFIG_HOME;; PATH) x=$PATH;; esac; if [ -n \"$x\" ]; then set -- \"$@\" \"$v=$x\"; fi; done; fi; if [ \"$D\" = 1 ] && [ \"$TG\" = 1 ]; then /usr/bin/env -i CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event SubagentStart; elif [ -z \"$T\" ]; then /usr/bin/env -i \"$@\" \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event SubagentStart; else /usr/bin/env -i \"$@\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCli.js\" --event SubagentStart; fi; rc=$?; if [ \"$rc\" -ne 0 ]; then echo \"TollGate guardrail: hook did not run or timed out (exit $rc); not blocking this event.\" >&2; fi; exit 0",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D=0; if [ \"$(/usr/bin/uname -s 2>/dev/null)\" = Darwin ]; then D=1; fi; TG=0; if [ -d /etc/tollgate ] || [ -d \"/Library/Application Support/TollGate\" ] || [ \"$TOLLGATE_ENTERPRISE\" = 1 ]; then TG=1; fi; N=node; if [ \"$TG\" = 1 ]; then N=; if [ \"$D\" = 1 ]; then if [ -x \"/Library/Application Support/TollGate/node/bin/node\" ]; then N=\"/Library/Application Support/TollGate/node/bin/node\"; fi; else for c in /opt/tollgate/node/bin/node \"/Library/Application Support/TollGate/node/bin/node\" /usr/bin/node; do if [ -x \"$c\" ]; then N=$c; break; fi; done; fi; fi; T=; for t in /usr/bin/timeout /bin/timeout; do if [ -x \"$t\" ]; then T=\"$t 25\"; break; fi; done; set -- CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\"; if [ \"$TG\" != 1 ]; then for v in HOME TMPDIR TOLLGATE_POLICY XDG_STATE_HOME XDG_CONFIG_HOME PATH; do case $v in HOME) x=$HOME;; TMPDIR) x=$TMPDIR;; TOLLGATE_POLICY) x=$TOLLGATE_POLICY;; XDG_STATE_HOME) x=$XDG_STATE_HOME;; XDG_CONFIG_HOME) x=$XDG_CONFIG_HOME;; PATH) x=$PATH;; esac; if [ -n \"$x\" ]; then set -- \"$@\" \"$v=$x\"; fi; done; fi; if [ \"$D\" = 1 ] && [ \"$TG\" = 1 ]; then /usr/bin/env -i CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event SubagentStop; elif [ -z \"$T\" ]; then /usr/bin/env -i \"$@\" \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event SubagentStop; else /usr/bin/env -i \"$@\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCli.js\" --event SubagentStop; fi; rc=$?; if [ \"$rc\" -ne 0 ]; then echo \"TollGate guardrail: hook did not run or timed out (exit $rc); not blocking this event.\" >&2; fi; exit 0",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D=0; if [ \"$(/usr/bin/uname -s 2>/dev/null)\" = Darwin ]; then D=1; fi; TG=0; if [ -d /etc/tollgate ] || [ -d \"/Library/Application Support/TollGate\" ] || [ \"$TOLLGATE_ENTERPRISE\" = 1 ]; then TG=1; fi; N=node; if [ \"$TG\" = 1 ]; then N=; if [ \"$D\" = 1 ]; then if [ -x \"/Library/Application Support/TollGate/node/bin/node\" ]; then N=\"/Library/Application Support/TollGate/node/bin/node\"; fi; else for c in /opt/tollgate/node/bin/node \"/Library/Application Support/TollGate/node/bin/node\" /usr/bin/node; do if [ -x \"$c\" ]; then N=$c; break; fi; done; fi; fi; T=; for t in /usr/bin/timeout /bin/timeout; do if [ -x \"$t\" ]; then T=\"$t 25\"; break; fi; done; set -- CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\"; if [ \"$TG\" != 1 ]; then for v in HOME TMPDIR TOLLGATE_POLICY XDG_STATE_HOME XDG_CONFIG_HOME PATH; do case $v in HOME) x=$HOME;; TMPDIR) x=$TMPDIR;; TOLLGATE_POLICY) x=$TOLLGATE_POLICY;; XDG_STATE_HOME) x=$XDG_STATE_HOME;; XDG_CONFIG_HOME) x=$XDG_CONFIG_HOME;; PATH) x=$PATH;; esac; if [ -n \"$x\" ]; then set -- \"$@\" \"$v=$x\"; fi; done; fi; if [ \"$D\" = 1 ] && [ \"$TG\" = 1 ]; then /usr/bin/env -i CLAUDE_PROJECT_DIR=\"$CLAUDE_PROJECT_DIR\" TOLLGATE_ENTERPRISE=\"$TOLLGATE_ENTERPRISE\" TOLLGATE_HUMAN_SESSION=\"$TOLLGATE_HUMAN_SESSION\" LANG=\"${LANG:-C}\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event PostToolUse; elif [ -z \"$T\" ]; then /usr/bin/env -i \"$@\" \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCliPosix.js\" --event PostToolUse; else /usr/bin/env -i \"$@\" $T \"$N\" \"$CLAUDE_PLUGIN_ROOT/dist/hookCli.js\" --event PostToolUse; fi; rc=$?; if [ \"$rc\" -ne 0 ]; then echo \"TollGate guardrail: hook did not run or timed out (exit $rc); not blocking this event.\" >&2; fi; exit 0",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

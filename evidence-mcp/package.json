@@ -1,0 +1,64 @@
+{
+  "name": "@tollwire/evidence-mcp",
+  "version": "0.1.0",
+  "mcpName": "io.github.TollWire/evidence-mcp",
+  "description": "MCP server that records agent changes, scans and approvals as a tamper-evident hash chain and maps them to security controls.",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TollWire/tollwire.git",
+    "directory": "evidence-mcp"
+  },
+  "homepage": "https://github.com/TollWire/tollwire/tree/main/evidence-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/TollWire/tollwire/issues"
+  },
+  "author": {
+    "name": "TollWire",
+    "url": "https://github.com/TollWire"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "bin": {
+    "tollgate-evidence-mcp": "dist/server.js"
+  },
+  "files": [
+    "dist/",
+    ".claude-plugin/",
+    ".mcp.json",
+    "npm-shrinkwrap.json",
+    "scripts/anchor.mjs",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --coverage",
+    "smoke": "node scripts/smoke.mjs",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run smoke"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.0",
+    "zod": "4.6.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@vitest/coverage-v8": "5.0.3",
+    "eslint": "10.12.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.0",
+    "vitest": "5.0.3"
+  },
+  "overrides": {
+    "minimatch": "^11.0.1"
+  }
+}
