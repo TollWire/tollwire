@@ -1,6 +1,6 @@
 # TollWire
 
-TollWire adds a policy enforcement layer to AI coding agents: it checks file writes, shell commands and new dependencies before they run, blocks detected violations, and keeps a tamper-evident log of reported changes, scans and approvals as evidence supporting ISO 27001 and NIS2 audits. TollWire itself runs locally and sends no data anywhere.
+TollWire adds a policy enforcement layer to AI coding agents: it checks file writes, shell commands and new dependencies before they run, blocks recognized detected violations, and keeps a tamper-evident log of reported changes, scans and approvals as evidence supporting audits. TollWire itself runs locally and sends no data anywhere.
 
 German version: [README.de.md](README.de.md)
 
