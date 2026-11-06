@@ -1,0 +1,84 @@
+{
+  "tools": [
+    {
+      "name": "check_command",
+      "description": "Check whether a shell command is allowed by the TollGate policy.",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "maxLength": 100000
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "check_path",
+      "description": "Check whether an agent may write to a file path (protected paths need human review).",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "path"
+        ]
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "check_dependencies",
+      "description": "Check a package.json or requirements.txt against the dependency allowlist.",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "ecosystem": {
+            "type": "string",
+            "enum": [
+              "npm",
+              "pypi"
+            ]
+          },
+          "manifest": {
+            "type": "string",
+            "maxLength": 100000
+          }
+        },
+        "required": [
+          "ecosystem",
+          "manifest"
+        ]
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "describe_policy",
+      "description": "Show the active guardrail policy (paths, blocked command reasons, allowlist).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    }
+  ]
+}

@@ -79,9 +79,12 @@ export interface WriteOptions {
   isDir?: ((path: string) => boolean) | undefined;
   /** Value of TMPDIR for the "$TMPDIR/..." exception (only below a fixed temporary root); undefined: no exception. */
   tmpdir?: string | undefined;
+  /** Project boundary for write targets (see DecideOptions.boundary); undefined: no boundary check. */
+  boundary?: ((path: string) => boolean) | undefined;
 }
 
-export type WriteDecision = { allowed: true } | { allowed: false; reason: string };
+/** A block by the project boundary carries `kind: "outside_project"` (same kind as for the write tools). */
+export type WriteDecision = { allowed: true } | { allowed: false; reason: string; kind?: "outside_project" };
 
 const MAX_DEPTH = 8;
 const MAX_BASES = 64;
@@ -93,7 +96,11 @@ const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*\+?=/;
 const KEYWORDS = new Set(["{", "}", "!", "if", "then", "else", "elif", "do", "while", "until"]);
 const PROCESS_SUBSTITUTION = /^[<>]\(/;
 const TOPLEVEL = /^"?\$\(git rev-parse --show-toplevel\)"?$/;
-const SHELLS = new Set(["sh", "bash", "zsh", "dash", "ksh", "mksh", "ash", "rbash", "fish"]);
+const SHELLS = new Set(["sh", "bash", "zsh", "dash", "ksh", "mksh", "ash", "rbash", "fish", "csh", "tcsh"]);
+/** C shells: their scripts are read with the POSIX tokenizer, which does not know the csh forms below. */
+const CSH_SHELLS = new Set(["csh", "tcsh"]);
+/** csh-only redirections (`>!`, `>>!`, `>&!`, `>>&`, `>>&!`) that the POSIX tokenizer would not see as a file target. */
+const CSH_REDIRECT = />>?&?!|>>&/;
 const AWKS = new Set(["awk", "gawk", "mawk", "nawk"]);
 const EDITORS = new Set(["ed", "red", "ex", "vi", "vim", "nvim", "view", "vimdiff", "nano", "pico", "emacs", "joe", "micro", "kak", "hx"]);
 const COMPRESSORS = new Set([
@@ -1119,12 +1126,15 @@ class Analyzer {
       }
     }
     const operand = args[j];
+    const csh = CSH_SHELLS.has(name);
     if (inline) {
-      if (operand !== undefined) this.inlineScript(operand, bases, depth, `${name} -c`);
+      if (operand !== undefined && csh && CSH_REDIRECT.test(operand.value)) this.add("opaque", operand.value, `${name} -c`);
+      else if (operand !== undefined) this.inlineScript(operand, bases, depth, `${name} -c`);
       return;
     }
     const readStdin = (): void => {
       if (stdin === null) this.add("opaque", "script from a pipe", name);
+      else if (stdin.kind !== "file" && csh && CSH_REDIRECT.test(stdin.text)) this.add("opaque", "csh redirection", name);
       else if (stdin.kind !== "file") this.script(stdin.text, bases, depth + 1, name);
       else if (stdin.text !== "/dev/null") this.add("opaque", `script from ${stdin.text}`, name);
     };
@@ -1674,6 +1684,7 @@ export interface WriteMessages {
   hardlink: (target: string) => string;
   unresolvable: (target: string) => string;
   proc: (target: string) => string;
+  outside: (target: string) => string;
 }
 
 export const ENGLISH_MESSAGES: WriteMessages = {
@@ -1688,6 +1699,7 @@ export const ENGLISH_MESSAGES: WriteMessages = {
   hardlink: (t) => `${t} has more than one hard link; writing it could change a protected file. Requires a human.`,
   unresolvable: (t) => `Bash write target ${t} cannot be resolved safely (symlink loop or filesystem error).`,
   proc: (t) => `Bash write target ${t} is a process or file-descriptor path whose meaning depends on the running process; fail closed.`,
+  outside: (t) => `Bash write target ${t} is outside the project directory (allowed outside it: /tmp, /var/tmp and an accepted TMPDIR).`,
 };
 
 export interface DecideOptions {
@@ -1703,10 +1715,32 @@ export interface DecideOptions {
   /** Platform and uid for the temporary roots; default: the current process. */
   tempHost?: TempHost | undefined;
   messages?: WriteMessages | undefined;
+  /**
+   * Project boundary: true if writing the absolute path stays inside the project or a temporary directory. The caller passes
+   * the boundary of the write tools, so Bash and Write/Edit share one rule. Checked for the lexical and the physical form of
+   * every target that is not a link source; safe devices (/dev/null, /dev/stdout ...) are exempt. Undefined: not checked.
+   */
+  boundary?: ((path: string) => boolean) | undefined;
+}
+
+/** True if a segment of the glob may expand to "..", which would leave the directory the glob names (`.*`, `.?`, braces). */
+function globMayClimb(glob: string): boolean {
+  return glob.split("/").some((seg) => seg === ".." || segmentMatch(seg, "..", false) || (/[{}]/.test(seg) && seg.includes("..")));
 }
 
 /** Device paths that are safe write targets. */
 const SAFE_DEVICES = new Set(["/dev/null", "/dev/stdout", "/dev/stderr", "/dev/tty", "/dev/zero", "/dev/full"]);
+/** Stream devices: they resolve through /proc/self/fd to the streams of the checking process, so their physical form says nothing. */
+const STREAM_DEVICES = new Set(["/dev/stdout", "/dev/stderr"]);
+
+/**
+ * A safe device only if the physical form agrees: the directory must be /dev physically (a lexical /dev/null reached through
+ * `link/../../dev/null` can be another file), and the device itself must resolve to a safe device (stdout/stderr excepted).
+ */
+function safeDevice(value: string, lexical: string): boolean {
+  if (!SAFE_DEVICES.has(lexical) || safePhysical(dirName(value)) !== "/dev") return false;
+  return STREAM_DEVICES.has(lexical) || SAFE_DEVICES.has(safePhysical(value) ?? "");
+}
 
 function procPath(path: string): boolean {
   return path === "/proc" || path.startsWith("/proc/") || path === "/dev/fd" || path.startsWith("/dev/fd/");
@@ -1846,9 +1880,10 @@ export function decideWrites(
       const p = foldPath(e.path);
       return c === p || p.startsWith(`${c}/`) || c === "/" || (e.dir && c.startsWith(`${p}/`));
     })?.path;
-  const checkPathTarget = (value: string): WriteDecision | null => {
+  const outside = (value: string): WriteDecision => ({ allowed: false, reason: messages.outside(value), kind: "outside_project" });
+  const checkPathTarget = (value: string, source = false): WriteDecision | null => {
     const lexical = normalizeAbsolute(value);
-    if (SAFE_DEVICES.has(lexical)) return null;
+    if (safeDevice(value, lexical)) return null;
     if (procPath(lexical)) return { allowed: false, reason: messages.proc(value) };
     const physical = safePhysical(value);
     if (physical === null) return { allowed: false, reason: messages.unresolvable(value) };
@@ -1858,6 +1893,8 @@ export function decideWrites(
       if (hit !== undefined) return { allowed: false, reason: messages.path(candidate, hit) };
     }
     if (roots.some((r) => physical.startsWith(`${r}/`)) && multiplyLinked(physical)) return { allowed: false, reason: messages.hardlink(value) };
+    // A link source (`ln -s /usr/lib/x y`) is not written; writes through the link are checked when they happen.
+    if (!source && options.boundary !== undefined && unique([lexical, physical]).some((c) => !(options.boundary as (path: string) => boolean)(c))) return outside(value);
     return null;
   };
   // The real temporary directory must lie below a fixed temporary root (acceptedTmpdir), outside the
@@ -1877,7 +1914,7 @@ export function decideWrites(
       return { allowed: false, reason: messages.link(f.value) };
     }
     if (f.kind === "path") {
-      const decision = checkPathTarget(f.value);
+      const decision = checkPathTarget(f.value, f.via.endsWith(" source"));
       if (decision !== null) return decision;
     } else if (f.kind === "glob") {
       if (links.size > 0) return { allowed: false, reason: messages.link(f.value) };
@@ -1900,6 +1937,10 @@ export function decideWrites(
         }
         const hitExtra = extraEntries.find((e) => globMayMatch(foldGlob(g), foldGlob(e.path), e.dir, dotglob));
         if (hitExtra !== undefined) return { allowed: false, reason: messages.glob(f.value, hitExtra.path) };
+      }
+      // Boundary for globs: the files lie below the directory the glob names, unless a segment can expand to "..".
+      if (options.boundary !== undefined && !f.via.endsWith(" source") && (globMayClimb(f.value) || globs.some((g) => !(options.boundary as (path: string) => boolean)(g)))) {
+        return outside(f.value);
       }
     } else if (f.kind === "dynamic") {
       const rest = temporaryRest(f.value, text);
@@ -1941,5 +1982,5 @@ export function checkBashWrites(
     const detail = err instanceof ShellSyntaxError ? err.message : "analysis error";
     return { allowed: false, reason: `Command cannot be checked for writes (${detail}); fail closed.` };
   }
-  return decideWrites(analysis, protectedPaths, opts.root, { home: opts.home, extraProtected, tmpdir: opts.tmpdir });
+  return decideWrites(analysis, protectedPaths, opts.root, { home: opts.home, extraProtected, tmpdir: opts.tmpdir, boundary: opts.boundary });
 }

@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 // Evidence MCP server (stdio only, no network listener). Writes only to the configured evidence log.
 import { dirname, join, resolve } from "node:path";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { anchorTagName, AnchorSchema, createAnchor, MAX_ANCHORS, recordEvent, signedTagCommand, verifyLogWithAnchors } from "./anchor.js";
 import { controlsFor, EVENT_TYPES } from "./controls.js";
 import { isEntryPoint } from "./entry.js";
 import { assertNoSymlinkedDirs, EventInputSchema, EvidenceError, readEntries, readLog, resolveLogRoot, verifyLogRead } from "./log.js";
 import { renderReport } from "./report.js";
+import { McpStdioServer, serveStdio } from "./vendor/mcpStdio.js";
 
 export const DEFAULT_LOG = join(".tollgate", "evidence", "log.jsonl");
 
@@ -47,8 +46,8 @@ export interface ServerOptions {
   root?: string;
 }
 
-export function createServer(configuredLogPath: string, options: ServerOptions = {}): McpServer {
-  const server = new McpServer({ name: "tollgate-evidence", version: "0.1.0" });
+export function createServer(configuredLogPath: string, options: ServerOptions = {}): McpStdioServer {
+  const server = new McpStdioServer({ name: "tollgate-evidence", version: "0.1.2" });
   // Resolved once: every check and every read/write of all tools refers to the same absolute path.
   const logPath = resolve(configuredLogPath);
   const root = options.root;
@@ -172,7 +171,8 @@ export function createServer(configuredLogPath: string, options: ServerOptions =
 export async function main(): Promise<void> {
   const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
   const logPath = resolveLogPath(process.env, projectDir);
-  await createServer(logPath, { root: resolveLogRoot(logPath, projectDir) }).connect(new StdioServerTransport());
+  // A line over the limit ends the session (fail closed); the exit code shows it.
+  if ((await serveStdio(createServer(logPath, { root: resolveLogRoot(logPath, projectDir) }))) === "overflow") process.exitCode = 1;
 }
 
 if (isEntryPoint(import.meta.url)) {

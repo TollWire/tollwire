@@ -637,7 +637,19 @@
       "python3 -c \"from os import remove; remove('AGENTS.md')\"",
       "python3 -c \"import os as o; o.remove('AGENTS.md')\"",
       "node -e \"require('fs/promises').rm('AGENTS.md')\"",
-      "node -e \"const { rm } = require('fs'); rm('x', () => {})\""
+      "node -e \"const { rm } = require('fs'); rm('x', () => {})\"",
+      "csh -c 'echo x > .git/hooks/pre-commit'",
+      "tcsh -c 'echo x >> .git/hooks/pre-commit'",
+      "csh -fc 'cp x .tollgate/policy.json'",
+      "tcsh -c 'echo x > .tollgate/policy.json'",
+      "csh -c 'echo x >> ~/.bashrc'",
+      "tcsh -c 'echo alias ll ls >> ~/.bashrc'",
+      "csh -c 'echo x >! .git/hooks/pre-commit'",
+      "tcsh -c 'echo x >>& ~/.bashrc'",
+      "csh -c 'echo x >&! .tollgate/x'",
+      "csh <<< 'echo x >>! .git/hooks/pre-commit'",
+      "tcsh -s <<< 'echo x >! .tollgate/a'",
+      "busybox sh -c 'echo x > .git/hooks/pre-commit'"
     ],
     "allow": [
       "echo x > dist/out.txt",
@@ -784,7 +796,13 @@
       "less AGENTS.md",
       "base64 -d x > /tmp/y",
       "info ls",
-      "unknownwrapper source x.sh"
+      "unknownwrapper source x.sh",
+      "csh -c 'echo hello'",
+      "tcsh -fc 'ls -la src'",
+      "csh -c 'echo x > dist/out.txt'",
+      "tcsh -c 'grep -r foo src > /dev/null'",
+      "csh -c 'echo x >& dist/log.txt'",
+      "tcsh -c 'echo x >> /tmp/out.txt'"
     ],
     "tmpdir": "/tmp/tollgate-fixture-tmp"
   },

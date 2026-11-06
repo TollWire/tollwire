@@ -4,7 +4,7 @@ TollWire adds a policy enforcement layer to AI coding agents: it checks file wri
 
 German version: [README.de.md](README.de.md)
 
-> **Release status: version 0.1.0 (first public release).** Interfaces can change incompatibly before 1.0.
+> **Release status: version 0.1.2.** Interfaces can change incompatibly before 1.0.
 
 ## Quick start
 

@@ -138,7 +138,7 @@ const PATH_DETAIL: Readonly<Partial<Record<RuleKind, string>>> = {
   unchecked_tool: "the tool is not on the enterprise tool allowlist.",
 };
 
-const DEPENDENCY_ITEM = /^(?:npm|pypi):[A-Za-z0-9@._~/-]{1,80}$/;
+const DEPENDENCY_ITEM = /^(?:npm|pypi|conda):[A-Za-z0-9@._~/-]{1,80}$/;
 
 /**
  * The detail for the agent from the reason that goes into the log. Kinds that concern a path or tool get a fixed text (the log

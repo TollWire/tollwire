@@ -1,17 +1,18 @@
 #!/usr/bin/env node
 // MCP server (stdio only, no network listener) exposing the guardrail checks to agents.
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { isEntryPoint } from "../entry.js";
 import { resolvePolicy } from "../enterprise.js";
+import { packageVersion } from "../events/runtime.js";
 import type { Policy } from "../policy.js";
+import { McpStdioServer, serveStdio } from "../vendor/mcpStdio.js";
 import { checkCommandTool, checkDependenciesTool, checkPathTool, describePolicyTool } from "./tools.js";
 
 const MAX_INPUT = 100_000;
 
-export function createServer(policy: Policy, projectDir: string): McpServer {
-  const server = new McpServer({ name: "tollgate-guardrail", version: "0.1.0" });
+export function createServer(policy: Policy, projectDir: string): McpStdioServer {
+  const server = new McpStdioServer({ name: "tollgate-guardrail", version: packageVersion(fileURLToPath(new URL("../..", import.meta.url))) });
 
   server.registerTool(
     "check_command",
@@ -53,7 +54,8 @@ export async function main(): Promise<void> {
   const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
   const resolution = resolvePolicy({ env: process.env, projectDir, platform: process.platform });
   if (!resolution.ok) throw new Error(resolution.message);
-  await createServer(resolution.policy, projectDir).connect(new StdioServerTransport());
+  // A line over the limit ends the session (fail closed); the exit code shows it.
+  if ((await serveStdio(createServer(resolution.policy, projectDir))) === "overflow") process.exitCode = 1;
 }
 
 if (isEntryPoint(import.meta.url)) {

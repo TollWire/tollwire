@@ -5,7 +5,7 @@ import { applyMasks, maskingSafe, messageMasks } from "./gitMessages.js";
 import type { RuleKind } from "./events/types.js";
 import { installProblems } from "./installs.js";
 import { matches } from "./matchers.js";
-import { canonicalPath, foldPath, resolveProjectPath } from "./paths.js";
+import { canonicalPath, foldPath, resolveProjectPath, type ResolvedPath } from "./paths.js";
 import type { Policy } from "./policy.js";
 import { parseShell, ShellSyntaxError } from "./shell.js";
 import { acceptedTmpdir, ALWAYS_PROTECTED_PATHS, checkBashWrites, MAX_COMMAND_BYTES, normalizeAbsolute, type TempHost, utf8Length } from "./writes.js";
@@ -124,7 +124,18 @@ export function checkPath(filePath: string, policy: Policy, ctx: Context): Decis
   return plain(pathDecision(filePath, policy, ctx));
 }
 
-function pathDecision(filePath: string, policy: Policy, ctx: Context): Detailed {
+interface Located {
+  absolute: string;
+  canonical: string;
+  resolved: ResolvedPath;
+}
+
+/**
+ * Project boundary of a write target, shared by the write tools and the Bash write targets: inside the project, or below a
+ * temporary directory (/tmp, /var/tmp, an accepted TMPDIR), both as requested and with symlinks resolved. The project
+ * root and its ancestors are outside.
+ */
+function locate(filePath: string, ctx: Pick<Context, "projectDir" | "tmpdir">): Located | Detailed {
   const absolute = isAbsolute(filePath) ? resolve(filePath) : resolve(ctx.projectDir, filePath);
   let resolved;
   let canonical;
@@ -142,6 +153,18 @@ function pathDecision(filePath: string, policy: Policy, ctx: Context): Detailed 
       return block(`${filePath} is outside the project directory.`, "outside_project");
     }
   }
+  return { absolute, canonical, resolved };
+}
+
+/** True if writing the path stays within the project boundary (see locate); used for the Bash write targets. */
+export function insideProjectBoundary(filePath: string, ctx: Pick<Context, "projectDir" | "tmpdir">): boolean {
+  return !("allowed" in locate(filePath, ctx));
+}
+
+function pathDecision(filePath: string, policy: Policy, ctx: Context): Detailed {
+  const located = locate(filePath, ctx);
+  if ("allowed" in located) return located;
+  const { absolute, canonical, resolved } = located;
   if (ctx.humanSession) return ALLOW;
   for (const rel of [resolved.requested, resolved.canonical]) {
     if (rel === null) continue;
@@ -258,10 +281,17 @@ function commandDecision(command: string, policy: Policy): Detailed {
 
 /**
  * Protected-path check for files a Bash command writes (redirections, sed -i, cp/mv, tee, inline code,
- * bash -c ...). Callers skip it in a human session.
+ * bash -c ...), plus the project boundary of the write tools: targets outside the project and the temporary
+ * directories are blocked. Callers skip it in a human session.
  */
 export function checkBashCommandWrites(command: string, policy: Policy, ctx: Context): Decision {
-  return checkBashWrites(command, protectedPatterns(policy), { root: ctx.projectDir, cwd: ctx.cwd, home: ctx.home, tmpdir: ctx.tmpdir }, extraProtectedFor(ctx));
+  return plain(bashWritesDecision(command, policy, ctx));
+}
+
+function bashWritesDecision(command: string, policy: Policy, ctx: Context): Detailed {
+  const boundary = (path: string): boolean => insideProjectBoundary(path, ctx);
+  const writes = checkBashWrites(command, protectedPatterns(policy), { root: ctx.projectDir, cwd: ctx.cwd, home: ctx.home, tmpdir: ctx.tmpdir, boundary }, extraProtectedFor(ctx));
+  return writes.allowed ? ALLOW : block(writes.reason, writes.kind ?? "write_target");
 }
 
 function extraProtectedFor(ctx: Context): string[] {
@@ -380,8 +410,7 @@ export function evaluateDetailed(event: ToolEvent, policy: Policy, ctx: Context)
       return block(`Dependencies not on the allowlist: ${installs.join(", ")}.`, "dependency", "allowedDependencies");
     }
     if (ctx.humanSession) return decision;
-    const writes = checkBashCommandWrites(input.command, policy, ctx);
-    return writes.allowed ? ALLOW : block(writes.reason, "write_target");
+    return bashWritesDecision(input.command, policy, ctx);
   }
 
   return ALLOW;

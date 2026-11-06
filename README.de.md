@@ -4,7 +4,7 @@ TollWire ergänzt KI-Coding-Agenten um eine Kontrollschicht: Es prüft Schreibzu
 
 Englische Hauptfassung: [README.md](README.md)
 
-> **Release-Stand: Version 0.1.0 (erste öffentliche Veröffentlichung).** Schnittstellen können sich vor 1.0
+> **Release-Stand: Version 0.1.2.** Schnittstellen können sich vor 1.0
 > inkompatibel ändern.
 
 ## Schnellstart

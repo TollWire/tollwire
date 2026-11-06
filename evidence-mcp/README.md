@@ -85,7 +85,9 @@ npm ci --ignore-scripts
 npm run check   # typecheck, lint, tests with coverage, build, smoke test
 ```
 
-Node.js 22.12.0 or later is required (`engines`). Runtime dependencies: `@modelcontextprotocol/sdk` and `zod`, both pinned to exact versions.
+Node.js 22.12.0 or later is required (`engines`). Runtime dependency: `zod` only, pinned to an exact version.
+
+**Dependencies and security:** the MCP server is a small built-in implementation (`src/vendor/mcpStdio.ts`): JSON-RPC 2.0 over stdin/stdout, one message per line, protocol versions as in the official SDK 1.32.0 (latest `2025-11-25`). It opens no network connection, rejects lines over 1 MiB (the session ends with exit code 1) and the key `__proto__`, and writes diagnostics to stderr only. The official `@modelcontextprotocol/sdk` is a development dependency only: `scripts/sdkCompat.mjs` (part of `npm run smoke`) connects its `Client` with `StdioClientTransport` to the built server and calls every tool. The SDK and its HTTP stack are not installed with the package.
 
 ## License
 

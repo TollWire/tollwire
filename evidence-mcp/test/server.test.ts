@@ -29,6 +29,12 @@ describe("evidence MCP server", () => {
     expect(tools.map((t) => t.name).sort()).toEqual(["create_anchor", "export_report", "list_events", "map_controls", "record_event", "verify_log"]);
   });
 
+  it("tools/list is identical to the SDK 1.32.0 server (fixture recorded before the switch)", async () => {
+    const fixture = JSON.parse(readFileSync(new URL("fixtures/tools-list.sdk-1.32.0.json", import.meta.url), "utf8")) as unknown;
+    const res = await createServer(logPath).handleMessage({ jsonrpc: "2.0", id: 1, method: "tools/list" });
+    expect(res?.result).toEqual(fixture);
+  });
+
   it("records events and returns mapped controls", async () => {
     const res = payload(
       await client.callTool({ name: "record_event", arguments: { type: "scan", summary: "gates green", actor: "ci", ref: "run 1" } }),

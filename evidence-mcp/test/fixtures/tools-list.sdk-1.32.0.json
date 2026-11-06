@@ -1,0 +1,197 @@
+{
+  "tools": [
+    {
+      "name": "record_event",
+      "description": "Append an evidence event (change, review, scan, approval, deployment, incident, access_change, agent_action, anchor) to the tamper-evident log. Never include secrets. `anchor` documents that the human stored an anchor externally: needs ref (tag name or comment URL), details.anchor {seq, hash, ts, count} matching the log and details.storage (signed_tag | digest_comment).",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "change",
+              "review",
+              "scan",
+              "approval",
+              "deployment",
+              "incident",
+              "access_change",
+              "agent_action",
+              "anchor"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "actor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "ref": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "details": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "type",
+          "summary",
+          "actor"
+        ]
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "list_events",
+      "description": "List recorded evidence events, newest last.",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "change",
+              "review",
+              "scan",
+              "approval",
+              "deployment",
+              "incident",
+              "access_change",
+              "agent_action",
+              "anchor"
+            ]
+          },
+          "limit": {
+            "default": 50,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        }
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "verify_log",
+      "description": "Verify the integrity of the evidence hash chain, the local anchor file (if present) and optional external anchors ({seq, hash, ts, count}, e.g. copied from a signed git tag). Detects rewritten or truncated logs relative to the anchors.",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "anchors": {
+            "maxItems": 1000,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "seq": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "hash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "ts": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "count": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "seq",
+                "hash",
+                "ts",
+                "count"
+              ]
+            }
+          }
+        }
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "create_anchor",
+      "description": "Anchor the latest evidence entry ({seq, hash, ts, count}) in the local, hash-linked anchor file and return a line for external storage. Does not sign or upload anything: the human stores the line outside this machine (e.g. a signed git tag).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "map_controls",
+      "description": "Show which ISO/IEC 27001:2022 Annex A and NIS2 Art. 21 controls an event type supports (draft mapping).",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "change",
+              "review",
+              "scan",
+              "approval",
+              "deployment",
+              "incident",
+              "access_change",
+              "agent_action",
+              "anchor"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "export_report",
+      "description": "Render a Markdown evidence report with chain integrity and control coverage.",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        }
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    }
+  ]
+}

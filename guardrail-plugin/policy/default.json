@@ -190,6 +190,14 @@
     {
       "pattern": "^(?!\\s*(?:git\\s+commit|gh\\s+(?:pr|issue)\\s+\\w+)\\b(?![^\\n]*\\s-(?:F|f|-(?:file|body-file|template))\\b)(?=[^\\n;&|`$<>]*\\s-(?:m|b|t|-(?:message|body|title))\\b)[^\\n;&|`$<>]*$)[\\s\\S]*?(?:\\b(?:npm|pnpm|yarn)(?:\\s+(?:--?(?:otp|C|w|workspace|prefix|registry|tag|access|userconfig|cwd|dir|filter|F)[ =]\\S+|workspace\\s+\\S+|-\\S+|[a-z]+://\\S+|npm)){0,8}\\s+(?:publish|unpublish|deprecate|dist-tag|owner|token|login|adduser)\\b)",
       "reason": "Publishing and registry account changes require a human (audit F-02)."
+    },
+    {
+      "pattern": "(?:^|[;&|({!`\\n]|\\b(?:(?:r?ba|z|da|m?k|a|t?c|fi)?sh|su|runuser)\\b(?:\\s+\\S+){0,6}?\\s+-\\w*c\\s+['\"]?|\\s-(?:exec|ok)(?:dir)?\\s+)\\s*(?:[A-Za-z_]\\w*=[^\\s;&|]*\\s+)*(?:(?:(?:/[\\w.+-]+)*/)?(?:env|nohup|(?:io)?nice|stdbuf|time(?:out)?|command(?!\\s+-\\w*[vV])|exec|builtin|setsid|chronic|unbuffer|xargs|(?:busy|toy)box|flock|watch|caffeinate|if|then|el(?:se|if)|do|while|until)(?:\\s+(?:-[^\\s;&|]*|\\d[\\d.]*[smhd]?|[A-Za-z_]\\w*=[^\\s;&|]*))*\\s+)*(?:(?:/[\\w.+-]+)*/)?(?:sudo(?:edit)?|doas|pkexec)(?=$|[\\s;&|)'\"`])",
+      "reason": "Running commands with elevated privileges (sudo, sudoedit, doas, pkexec) is not allowed; a human runs them."
+    },
+    {
+      "pattern": "(?:^|[\\s;&|({!`'\\\"])(?:(?:/[\\w.+-]+)*/)?(?:env(?:\\s+(?:-[uCP]\\s*[^\\s;&|-][^\\s;&|]*|-[^uCPS\\s;&|][^\\s;&|]*|[A-Za-z_]\\w*=[^\\s;&|]*))*(?:\\s+-S)?|timeout(?:\\s+(?:-[sk]\\s*[^\\s;&|-][^\\s;&|]*|-[^sk\\s;&|][^\\s;&|]*))*\\s+[\\d.]+[smhd]?|xargs(?:\\s+(?:-[adEILnPs]\\s*[^\\s;&|-][^\\s;&|]*|-[^adEILnPs\\s;&|][^\\s;&|]*))*|flock(?:\\s+(?:-[wE]\\s*[^\\s;&|-][^\\s;&|]*|-[^wEc\\s;&|-][^\\s;&|]*))*\\s+[^\\s;&|-][^\\s;&|]*|exec\\s+-a\\s*[^\\s;&|-][^\\s;&|]*)\\s+['\\\"]?(?:sudo(?:edit)?|doas|pkexec)(?=$|[\\s;&|)'\\\"`])",
+      "reason": "Running commands with elevated privileges (sudo, sudoedit, doas, pkexec) is not allowed, also behind env, timeout, xargs, flock, exec or nice with option values; a human runs them."
     }
   ],
   "allowedDependencies": {

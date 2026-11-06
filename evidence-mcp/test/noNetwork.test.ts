@@ -1,15 +1,14 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
+import { builtinModules } from "node:module";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 // INV-12/13: the hook and the MCP server open no connection. Static import test, same idea as tollgate-enterprise/test/noNetwork.test.ts.
 const SRC = new URL("../src/", import.meta.url).pathname;
 const NETWORK = /^(?:node:)?(net|http|https|http2|tls|dgram|dns|dns\/promises|cluster|inspector)$/;
-// The MCP server talks over stdio only; every other SDK entry (HTTP, SSE, client, auth) is a network path.
-const SDK_ALLOWED = new Set([
-  "@modelcontextprotocol/sdk/server/mcp.js",
-  "@modelcontextprotocol/sdk/server/stdio.js",
-]);
+// The MCP server is the own stdio implementation (src/vendor/mcpStdio.ts); the SDK is a devDependency for the
+// compatibility test only. Runtime imports: node: built-ins, relative modules and zod, nothing else.
+const RUNTIME_PACKAGES = new Set(["zod"]);
 // Explicit allowlist (relative to src/) for modules that may import a network module. Empty on purpose: add an entry only with an ADR.
 const NETWORK_ALLOWLIST = new Set<string>([]);
 
@@ -54,10 +53,15 @@ describe("evidence-mcp opens no network connection (INV-12/13)", () => {
     }
   });
 
-  it("imports only the stdio parts of the MCP SDK", () => {
+  it("imports no part of the MCP SDK and no package other than zod", () => {
     for (const file of all) {
       for (const spec of specifiers(readFileSync(file, "utf8"))) {
-        if (spec.startsWith("@modelcontextprotocol/")) expect(SDK_ALLOWED.has(spec), `${relative(SRC, file)} imports ${spec}`).toBe(true);
+        const where = `${relative(SRC, file)} imports ${spec}`;
+        expect(spec, where).not.toMatch(/^@modelcontextprotocol\//);
+        // Only module specifiers (the scan also sees strings such as regex sources in codeScan.ts).
+        const pkg = /^((?:@[a-z0-9][\w.-]*\/)?[a-z0-9][\w.-]*)(?:\/.*)?$/.exec(spec)?.[1];
+        if (pkg === undefined || builtinModules.includes(pkg)) continue;
+        expect(RUNTIME_PACKAGES.has(pkg), where).toBe(true);
       }
     }
   });

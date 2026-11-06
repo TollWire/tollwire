@@ -92,7 +92,7 @@ describe("runtime", () => {
   it("describes host, user and platform names", () => {
     const rt = systemRuntime();
     expect(rt.home).toMatch(/^\//);
-    expect(rt.version).toBe("0.1.0");
+    expect(rt.version).toBe((JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")) as { version: string }).version);
     expect(rt.pluginRoot.endsWith("guardrail-plugin/")).toBe(true);
     expect(metaOf({ ...rt, hostname: "h".repeat(300), username: "u", uid: undefined })).toMatchObject({ host: { os: "linux" }, user: { name: "u", id: "-1" } });
     expect(metaOf(rt).host.name.length).toBeLessThanOrEqual(255);
