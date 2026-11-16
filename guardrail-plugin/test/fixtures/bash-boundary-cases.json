@@ -1,0 +1,41 @@
+{
+  "_comment": "Project boundary for Bash write targets: commands run in a project directory with a fake home directory. Shared by the plugin (Vitest) and the Python port of the repository hook; both must decide identically. Only fed into the check, never executed.",
+  "block": [
+    "echo 127.0.0.1 example.test >> /etc/hosts",
+    "bash -c 'echo 127.0.0.1 example.test >> /etc/hosts'",
+    "sudo bash -c 'echo 127.0.0.1 example.test >> /etc/hosts'",
+    "csh -c 'echo 127.0.0.1 example.test >> /etc/hosts'",
+    "sed -i s/a/b/ /etc/hosts",
+    "cp build.log /var/log/build.log",
+    "tee -a /usr/local/etc/x.conf < in.txt",
+    "dd if=/dev/zero of=/var/lib/x bs=1 count=1",
+    "tar -xf a.tar -C /opt",
+    "mv /etc/hosts.bak /etc/hosts",
+    "rm -f /etc/*.conf",
+    "echo x > ../outside.txt",
+    "touch src/../../outside.txt",
+    "cd .. && touch outside.txt",
+    "cd /etc && touch x",
+    "echo x > ~/notes.txt",
+    "cp x ~/",
+    "echo x > /dev/sda"
+  ],
+  "allow": [
+    "ls > /dev/null 2>&1",
+    "echo x >/dev/stdout",
+    "echo x >/dev/stderr",
+    "echo x >&2",
+    "make test 2>&1 | tee test.log",
+    "echo x > /tmp/tollgate-boundary-out.txt",
+    "echo x >> /var/tmp/tollgate-boundary-out.txt",
+    "cp README.md /tmp/",
+    "rm -f *.log",
+    "rm -f /tmp/tollgate-boundary-*",
+    "mkdir -p build/out",
+    "cat /etc/hosts",
+    "grep -r foo /etc 2>/dev/null",
+    "ln -s /usr/lib/x lnk",
+    "cd /tmp && touch tollgate-boundary-x",
+    "csh -c 'echo x > build/out.txt'"
+  ]
+}
