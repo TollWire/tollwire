@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex">
+  <title>TollWire – Guardrails and evidence for coding agents</title>
+  <!-- DRAFT – noindex. No data collection: no forms, no cookies, no trackers, no external resources. Contact via GitHub.
+       Go-live: confirm Impressum/legal note (host, OP-009); host headers (X-Robots-Tag, CSP, Referrer-Policy, X-Content-Type-Options);
+       finalise the AI-assistance note after human sign-off. German wording lives only in the repository README. -->
+  <style>
+    /* Layout: sticky blurred nav; editorial hero with product visual; hairline-bordered sections on a cool neutral canvas. */
+    :root {
+      --bg:#ffffff; --bg-soft:#f6f8fc; --surface:#ffffff; --surface-2:#f9fbff;
+      --fg:#0a0f1a; --fg-soft:#232c3a; --muted:#596173; --faint:#8a93a4;
+      --border:#e6e9f0; --border-strong:#cfd6e2; --hair:#eef1f6;
+      --accent:#2456e6; --accent-ink:#1b43c4; --accent-soft:#eaf0ff; --on-accent:#ffffff;
+      --ok:#0f7a4f; --block:#c2402f; --ring:rgba(36,86,230,.38);
+      --shadow-sm:0 1px 2px rgba(10,15,26,.05), 0 1px 1px rgba(10,15,26,.04);
+      --shadow-md:0 2px 4px rgba(10,15,26,.04), 0 12px 28px -8px rgba(10,15,26,.12);
+      --shadow-lg:0 4px 8px rgba(10,15,26,.05), 0 30px 60px -18px rgba(10,15,26,.28);
+      --panel:#0b1220; --panel-fg:#dbe4f2; --panel-border:#1d2740;
+      --font:-apple-system,BlinkMacSystemFont,"Segoe UI Variable Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      --mono:ui-monospace,"SF Mono","Cascadia Code","Segoe UI Mono",Menlo,Consolas,monospace;
+      --maxw:1120px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg:#0a0d13; --bg-soft:#0c1017; --surface:#11161f; --surface-2:#0e131b;
+        --fg:#eef2f8; --fg-soft:#cdd5e2; --muted:#98a2b3; --faint:#69738494;
+        --border:#1d2430; --border-strong:#303a49; --hair:#161c26;
+        --accent:#6a9bff; --accent-ink:#8cb2ff; --accent-soft:#141d33; --on-accent:#070a10;
+        --ok:#46c08a; --block:#ef7d6b; --ring:rgba(106,155,255,.4);
+        --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+        --shadow-md:0 2px 6px rgba(0,0,0,.4), 0 16px 34px -12px rgba(0,0,0,.6);
+        --shadow-lg:0 8px 20px rgba(0,0,0,.45), 0 40px 70px -20px rgba(0,0,0,.7);
+        --panel:#070b13; --panel-fg:#cfdaec; --panel-border:#1a2338;
+        color-scheme:dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg:#0a0d13; --bg-soft:#0c1017; --surface:#11161f; --surface-2:#0e131b;
+      --fg:#eef2f8; --fg-soft:#cdd5e2; --muted:#98a2b3; --faint:#69738494;
+      --border:#1d2430; --border-strong:#303a49; --hair:#161c26;
+      --accent:#6a9bff; --accent-ink:#8cb2ff; --accent-soft:#141d33; --on-accent:#070a10;
+      --ok:#46c08a; --block:#ef7d6b; --ring:rgba(106,155,255,.4);
+      --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+      --shadow-md:0 2px 6px rgba(0,0,0,.4), 0 16px 34px -12px rgba(0,0,0,.6);
+      --shadow-lg:0 8px 20px rgba(0,0,0,.45), 0 40px 70px -20px rgba(0,0,0,.7);
+      --panel:#070b13; --panel-fg:#cfdaec; --panel-border:#1a2338;
+      color-scheme:dark;
+    }
+
+    * { box-sizing:border-box; }
+    html { scroll-padding-top:80px; -webkit-text-size-adjust:100%; }
+    @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+    body { margin:0; background:var(--bg); color:var(--fg);
+      font-family:var(--font); font-size:16.5px; line-height:1.6; letter-spacing:-.006em;
+      -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+    a { color:var(--accent); text-decoration:none; }
+    ::selection { background:var(--accent); color:var(--on-accent); }
+    .wrap { max-width:var(--maxw); margin:0 auto;
+      padding-left:max(20px, env(safe-area-inset-left,0px)); padding-right:max(20px, env(safe-area-inset-right,0px)); }
+    .muted { color:var(--muted); }
+    .sec { padding-block:clamp(56px,8vw,104px); }
+    .eyebrow { font-size:.74rem; font-weight:650; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); }
+    h1,h2,h3 { letter-spacing:-.025em; text-wrap:balance; }
+    :focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:6px; }
+    .skip { position:absolute; left:-9999px; top:0; background:var(--accent); color:var(--on-accent); padding:10px 16px; border-radius:0 0 10px 0; z-index:60; font-weight:600; }
+    .skip:focus { left:0; }
+
+    /* ---- nav ---- */
+    header.nav { position:sticky; top:env(safe-area-inset-top,0px); z-index:50;
+      background:color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter:saturate(1.4) blur(14px);
+      border-bottom:1px solid var(--hair); }
+    body::before { content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:51; background:var(--bg); }
+    .nav .wrap { display:flex; align-items:center; gap:18px; height:66px; }
+    .brand { display:inline-flex; align-items:center; gap:10px; font-weight:700; font-size:1.12rem; color:var(--fg); letter-spacing:-.02em; }
+    .brand svg { display:block; filter:drop-shadow(0 2px 6px var(--ring)); }
+    .navlinks { margin-left:auto; display:flex; align-items:center; gap:28px; }
+    .navlinks a.lnk { color:var(--muted); font-size:.93rem; font-weight:500; transition:color .15s; }
+    @media (hover:hover){ .navlinks a.lnk:hover{ color:var(--fg); } }
+    .btn { display:inline-flex; align-items:center; gap:8px; font:inherit; font-weight:600; font-size:.95rem;
+      padding:10px 17px; border-radius:10px; border:1px solid transparent; cursor:pointer; transition:transform .12s, box-shadow .15s, background .15s, border-color .15s; white-space:nowrap; }
+    .btn-primary { background:var(--accent); color:var(--on-accent); box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.18); }
+    .btn-ghost { background:var(--surface); color:var(--fg); border-color:var(--border-strong); box-shadow:var(--shadow-sm); }
+    @media (hover:hover){ .btn-primary:hover{ background:var(--accent-ink); transform:translateY(-1px); box-shadow:var(--shadow-md); }
+      .btn-ghost:hover{ border-color:var(--accent); color:var(--accent); transform:translateY(-1px); } }
+    .btn-lg { padding:13px 22px; font-size:1rem; border-radius:12px; }
+
+    /* ---- hero ---- */
+    .hero { position:relative; overflow:hidden; padding-top:clamp(56px,8vw,96px); padding-bottom:clamp(40px,6vw,72px); }
+    .hero::before { content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+      background:
+        radial-gradient(900px 440px at 78% -8%, color-mix(in srgb,var(--accent) 16%, transparent), transparent 70%),
+        radial-gradient(700px 360px at 6% 0%, color-mix(in srgb,var(--accent) 7%, transparent), transparent 65%); }
+    .hero::after { content:""; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.5;
+      background-image:linear-gradient(var(--hair) 1px, transparent 1px), linear-gradient(90deg, var(--hair) 1px, transparent 1px);
+      background-size:52px 52px; mask-image:radial-gradient(760px 420px at 70% 0%, #000 0%, transparent 72%); }
+    .hero .wrap { position:relative; z-index:1; display:grid; grid-template-columns:1.04fr .96fr; gap:clamp(28px,5vw,64px); align-items:center; }
+    .chip { display:inline-flex; align-items:center; gap:9px; padding:6px 12px 6px 7px; border:1px solid var(--border); border-radius:999px;
+      background:var(--surface); box-shadow:var(--shadow-sm); font-size:.82rem; font-weight:550; color:var(--fg-soft); }
+    .chip b { background:var(--accent-soft); color:var(--accent-ink); font-weight:650; padding:2px 8px; border-radius:999px; font-size:.75rem; }
+    [data-theme="dark"] .chip b, :root:not([data-theme="light"]) .chip b { color:var(--accent); }
+    h1.title { font-size:clamp(2.3rem,5.4vw,3.6rem); line-height:1.05; font-weight:760; margin:20px 0 0; }
+    .sub { font-size:clamp(1.05rem,2vw,1.2rem); color:var(--muted); margin:18px 0 0; max-width:30ch; }
+    .sub2 { font-size:1.02rem; color:var(--muted); margin:10px 0 0; max-width:34ch; }
+    .cta-row { display:flex; flex-wrap:wrap; gap:12px; margin-top:28px; }
+    .trust { margin-top:28px; display:flex; flex-wrap:wrap; gap:10px 22px; list-style:none; padding:0; }
+    .trust li { display:inline-flex; align-items:center; gap:8px; font-size:.9rem; color:var(--fg-soft); }
+    .trust svg { color:var(--ok); flex:none; }
+
+    /* product visual: terminal */
+    .mock { position:relative; background:var(--panel); color:var(--panel-fg); border:1px solid var(--panel-border);
+      border-radius:16px; box-shadow:var(--shadow-lg); overflow:hidden; }
+    .mock .bar { display:flex; align-items:center; gap:7px; padding:12px 15px; border-bottom:1px solid rgba(255,255,255,.07); }
+    .mock .bar i { width:11px; height:11px; border-radius:50%; background:#36415a; }
+    .mock .bar b { margin-left:10px; font:500 .8rem/1 var(--mono); color:#8793a9; letter-spacing:.01em; }
+    .mock pre { margin:0; padding:18px 18px 16px; font:13px/1.75 var(--mono); white-space:pre-wrap; overflow-wrap:anywhere; }
+    .mock .d { color:#7d8aa3; } .mock .x { color:#ff8e85; font-weight:600; } .mock .a { color:#74e0ab; font-weight:600; } .mock .k { color:#8fb6ff; }
+    .mock figcaption { padding:0 18px 15px; font:.76rem/1.5 var(--mono); color:#6f7c93; }
+
+    /* ---- section heads ---- */
+    .head { max-width:60ch; margin-bottom:clamp(28px,4vw,44px); }
+    .head .eyebrow { display:block; margin-bottom:12px; }
+    .head h2 { font-size:clamp(1.65rem,3.4vw,2.3rem); font-weight:720; margin:0; line-height:1.12; }
+    .head p { color:var(--muted); margin:12px 0 0; font-size:1.08rem; max-width:52ch; }
+
+    /* ---- cards ---- */
+    .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; list-style:none; padding:0; margin:0; }
+    .card { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:26px;
+      box-shadow:var(--shadow-sm); transition:transform .16s, box-shadow .16s, border-color .16s; }
+    @media (hover:hover){ .card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-md); border-color:var(--border-strong); } }
+    .card .ic { width:42px; height:42px; border-radius:11px; display:grid; place-items:center; margin-bottom:16px;
+      background:var(--accent-soft); color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 22%, transparent); }
+    [data-theme="dark"] .card .ic, :root:not([data-theme="light"]) .card .ic { color:var(--accent-ink); }
+    .card h3 { margin:0 0 8px; font-size:1.12rem; font-weight:650; }
+    .card p { margin:0; color:var(--muted); font-size:.97rem; }
+    code { font:.86em var(--mono); background:var(--bg-soft); border:1px solid var(--border); border-radius:6px; padding:.5px 6px; color:var(--fg-soft); }
+
+    .note { margin-top:20px; display:flex; gap:14px; align-items:flex-start; background:var(--surface-2); border:1px solid var(--border);
+      border-radius:14px; padding:20px 22px; }
+    .note .b { width:34px; height:34px; border-radius:9px; flex:none; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent); }
+    .note p { margin:0; color:var(--fg-soft); font-size:.98rem; }
+    .note strong { color:var(--fg); }
+
+    /* ---- steps ---- */
+    .steps { display:grid; grid-template-columns:repeat(4,1fr); gap:0; list-style:none; padding:0; margin:0;
+      border:1px solid var(--border); border-radius:16px; overflow:hidden; background:var(--surface); box-shadow:var(--shadow-sm); counter-reset:s; }
+    .step { padding:26px 22px; border-right:1px solid var(--hair); }
+    .step:last-child { border-right:0; }
+    .step .n { counter-increment:s; display:inline-grid; place-items:center; width:30px; height:30px; border-radius:9px;
+      background:var(--accent); color:var(--on-accent); font:700 .9rem/1 var(--font); box-shadow:var(--shadow-sm); }
+    .step .n::before { content:"0" counter(s); }
+    .step h3 { margin:16px 0 6px; font-size:1.05rem; font-weight:650; }
+    .step p { margin:0; color:var(--muted); font-size:.94rem; }
+
+    /* ---- architecture ---- */
+    .arch { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:clamp(20px,3vw,30px);
+      box-shadow:var(--shadow-md); margin:0; }
+    .arch .diagram { overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:12px; }
+    .arch svg { width:100%; height:auto; display:block; }
+    .arch-fallback { display:none; }
+    .legend { display:flex; flex-wrap:wrap; justify-content:center; gap:10px 22px; margin:18px 0 0; list-style:none; padding:0; font-size:.86rem; color:var(--muted); }
+    .legend li { display:inline-flex; align-items:center; gap:8px; }
+    .sw { width:13px; height:13px; border-radius:4px; flex:none; }
+    .arch figcaption { color:var(--muted); font-size:.86rem; text-align:center; margin-top:14px; }
+    @media (max-width:680px){
+      .arch .diagram { margin:0 -8px; padding:2px 8px 10px; }
+      .arch svg { min-width:580px; }
+      .arch .scrollhint { display:block; }
+    }
+    .arch .scrollhint { display:none; text-align:center; font-size:.76rem; color:var(--faint); margin-top:8px; }
+
+    /* ---- evidence table ---- */
+    .tablewrap { overflow-x:auto; border:1px solid var(--border); border-radius:14px; background:var(--surface); box-shadow:var(--shadow-sm); }
+    table.ev { width:100%; border-collapse:collapse; font-size:.92rem; min-width:460px; }
+    table.ev caption { text-align:left; color:var(--muted); font-size:.82rem; padding:14px 18px 0; caption-side:top; }
+    table.ev th, table.ev td { text-align:left; padding:12px 18px; border-bottom:1px solid var(--hair); font-variant-numeric:tabular-nums; }
+    table.ev thead th { color:var(--faint); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.06em; }
+    table.ev tbody tr:last-child td { border-bottom:0; }
+    table.ev td code { background:transparent; border:0; padding:0; }
+    .pill { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:999px; font-size:.78rem; font-weight:600; }
+    .pill.b { background:color-mix(in srgb,var(--block) 14%, transparent); color:var(--block); }
+    .pill.a { background:color-mix(in srgb,var(--ok) 15%, transparent); color:var(--ok); }
+
+    /* ---- contact ---- */
+    .cta-band { position:relative; overflow:hidden; border:1px solid var(--border); border-radius:20px; padding:clamp(28px,4vw,44px);
+      background:linear-gradient(135deg, var(--accent-soft), var(--surface) 60%); box-shadow:var(--shadow-md); }
+    .cta-band h2 { font-size:clamp(1.5rem,3vw,2rem); font-weight:720; margin:0; }
+    .cta-band p { color:var(--muted); margin:10px 0 0; max-width:56ch; }
+
+    /* ---- legal ---- */
+    .legal h2 { font-size:1.35rem; font-weight:680; }
+    .legal h3 { font-size:1.02rem; font-weight:620; margin:18px 0 4px; }
+    .legal p { color:var(--muted); max-width:72ch; }
+
+    /* ---- footer ---- */
+    footer.site { border-top:1px solid var(--border); background:var(--bg-soft); }
+    footer.site .wrap { padding-block:30px; display:flex; flex-wrap:wrap; gap:14px 26px; align-items:center; font-size:.9rem; color:var(--muted); }
+    footer.site a { color:var(--muted); }
+    @media (hover:hover){ footer.site a:hover{ color:var(--fg); } }
+    footer .fine { flex-basis:100%; font-size:.82rem; line-height:1.55; color:var(--faint); }
+
+    @media (max-width:900px){ .hero .wrap{ grid-template-columns:1fr; } .sub,.sub2{ max-width:46ch; } .navlinks a.lnk{ display:none; } }
+    @media (max-width:760px){ .grid3{ grid-template-columns:1fr; } .steps{ grid-template-columns:1fr 1fr; } .step{ border-bottom:1px solid var(--hair); } .step:nth-child(odd){ border-right:1px solid var(--hair); } .step:nth-child(even){ border-right:0; } }
+    @media (max-width:460px){ .steps{ grid-template-columns:1fr; } .step{ border-right:0 !important; } }
+  </style>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="TollWire home">
+      <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect x="2" y="2" width="28" height="28" rx="9" fill="var(--accent)"/>
+        <path d="M16 7l7 4v5c0 4.4-3 7.1-7 9-4-1.9-7-4.6-7-9v-5l7-4z" fill="#fff" opacity=".96"/>
+        <path d="M12.5 16.2l2.4 2.4 4.6-4.9" stroke="var(--accent)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      TollWire
+    </a>
+    <nav class="navlinks" aria-label="Primary">
+      <a class="lnk" href="#what">What it does</a>
+      <a class="lnk" href="#how">How it works</a>
+      <a class="lnk" href="#arch">Architecture</a>
+      <a class="lnk" href="#evidence">Evidence</a>
+      <a class="btn btn-primary" href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <span id="top"></span>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="chip"><b>v0.1.4</b> now on npm</span>
+        <h1 class="title">Rules that take effect before the agent acts.</h1>
+        <p class="sub">TollWire checks file writes, shell commands and new dependencies <em>before</em> they run, and blocks detected violations.</p>
+        <p class="sub2">Every change, scan and approval is recorded in a tamper-evident log.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href="#contact">Contact us on GitHub</a>
+          <a class="btn btn-ghost btn-lg" href="#arch">See the architecture</a>
+        </div>
+        <ul class="trust">
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 7"/></svg>Plugin code makes no network requests</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 7"/></svg>Tamper-evident evidence log</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 7"/></svg>A layer alongside your sandbox — not a replacement</li>
+        </ul>
+      </div>
+
+      <figure class="mock">
+        <div class="bar"><i></i><i></i><i></i><b>claude-code · TollWire hook</b></div>
+<pre><span class="d"># Agent: Write → .git/hooks/pre-commit</span>
+<span class="x">BLOCKED</span>  <span class="d">protected_path (exit 2)</span>
+         <span class="d">Target is inside a protected path.</span>
+
+<span class="d"># Agent: Bash → npm install left-pad</span>
+<span class="x">BLOCKED</span>  <span class="d">dependency_not_allowed</span>
+         <span class="d">Not on the allowlist.</span>
+
+<span class="d"># Agent: Edit → src/api/routes.ts</span>
+<span class="a">ALLOWED</span>  <span class="d">→ evidence log</span>
+         <span class="k">evt#1042</span> <span class="d">hash chain ok</span></pre>
+        <figcaption>Schematic example output — not a real measurement.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- WHAT -->
+  <section id="what" class="sec">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Enforcement</span>
+        <h2>Three checks in one place</h2>
+        <p>A hook inside the agent evaluates every action against your policy — deny-by-default, fail-closed.</p>
+      </div>
+      <ul class="grid3">
+        <li class="card">
+          <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3>Protected paths</h3>
+          <p>Writes to configuration, policies, CI and agent setup are blocked. It accounts for common bypasses such as symlink targets and manifest/lockfile detours — no guarantee, and not a sandbox replacement.</p>
+        </li>
+        <li class="card">
+          <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M8 10l3 2-3 2"/><path d="M13 14h4"/></svg></div>
+          <h3>Dangerous commands</h3>
+          <p>Shell actions are checked against your rules before they run. Known bypasses via loader variables such as <code>LD_PRELOAD</code> are accounted for.</p>
+        </li>
+        <li class="card">
+          <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M12 2v18M4 6.5l8 4.5 8-4.5"/></svg></div>
+          <h3>Dependencies</h3>
+          <p>New packages only from your allowlist. Installs that can't be verified are rejected fail-closed — the same in the hook and the MCP tools.</p>
+        </li>
+      </ul>
+      <div class="note">
+        <div class="b" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5"/><circle cx="12" cy="16.5" r=".4" fill="currentColor" stroke="none"/><path d="M12 3l9 16H3z"/></svg></div>
+        <p><strong>Honestly scoped.</strong> TollWire is <strong>not a replacement for a sandbox</strong> and does not replace an audit. It is an additional, verifiable control layer (defense-in-depth) run together with an isolation environment. The plugin code makes no network requests.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW -->
+  <section id="how" class="sec" style="padding-top:0;">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Flow</span>
+        <h2>How it works</h2>
+        <p>Four steps, local. TollWire itself runs on your machine and sends neither code nor prompts anywhere.</p>
+      </div>
+      <ol class="steps">
+        <li class="step"><span class="n"></span><h3>Intercept</h3><p>The agent is about to write a file or run a command — the hook intercepts the action first.</p></li>
+        <li class="step"><span class="n"></span><h3>Check</h3><p>Paths, commands and dependencies are checked against your policy (deny-by-default).</p></li>
+        <li class="step"><span class="n"></span><h3>Decide</h3><p>Allowed → it goes through. Violation → blocked with a clear reason and exit code.</p></li>
+        <li class="step"><span class="n"></span><h3>Record</h3><p>The decision is written to a hash-chained log — tamper-evident and verifiable.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section id="arch" class="sec" style="padding-top:0;">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Architecture</span>
+        <h2>How TollWire steps in</h2>
+        <p>TollWire sits as a <code>PreToolUse</code> hook between the agent and the system. Every action passes the policy before it takes effect — and is logged.</p>
+      </div>
+      <figure class="arch">
+        <div class="diagram">
+        <svg viewBox="0 0 960 300" role="img" aria-labelledby="archTitle archDesc" font-family="-apple-system,Segoe UI,Roboto,sans-serif">
+          <title id="archTitle">TollWire architecture</title>
+          <desc id="archDesc">The coding agent sends every file and shell action to the TollWire hook. The hook checks paths, commands and dependencies against the policy and decides: allowed actions go to the system, violations are blocked. Every decision is written to the tamper-evident evidence log, whose entries follow a draft mapping to ISO/IEC 27001 and NIS2.</desc>
+          <defs>
+            <marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
+            <marker id="arwB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--block)"/></marker>
+            <marker id="arwG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--ok)"/></marker>
+          </defs>
+          <rect x="18" y="104" width="154" height="92" rx="13" fill="var(--surface-2)" stroke="var(--border-strong)" stroke-width="1.5"/>
+          <text x="95" y="138" text-anchor="middle" font-size="15" font-weight="700" fill="var(--fg)">Coding agent</text>
+          <text x="95" y="160" text-anchor="middle" font-size="12.5" fill="var(--muted)">Claude Code, …</text>
+          <text x="95" y="179" text-anchor="middle" font-size="12" fill="var(--muted)">Write · Bash · Edit</text>
+          <line x1="172" y1="150" x2="300" y2="150" stroke="var(--muted)" stroke-width="2" marker-end="url(#arw)"/>
+          <text x="236" y="141" text-anchor="middle" font-size="12" fill="var(--muted)">action</text>
+          <rect x="300" y="74" width="204" height="152" rx="15" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+          <text x="402" y="102" text-anchor="middle" font-size="15.5" font-weight="700" fill="var(--fg)">TollWire hook</text>
+          <text x="402" y="120" text-anchor="middle" font-size="12" fill="var(--muted)">PreToolUse · deny-by-default</text>
+          <g font-size="12.5" fill="var(--fg)">
+            <rect x="320" y="134" width="164" height="26" rx="7" fill="var(--surface)" stroke="var(--border)"/><text x="402" y="151" text-anchor="middle">Check paths</text>
+            <rect x="320" y="164" width="164" height="26" rx="7" fill="var(--surface)" stroke="var(--border)"/><text x="402" y="181" text-anchor="middle">Check commands</text>
+            <rect x="320" y="194" width="164" height="26" rx="7" fill="var(--surface)" stroke="var(--border)"/><text x="402" y="211" text-anchor="middle">Check dependencies</text>
+          </g>
+          <line x1="504" y1="116" x2="642" y2="92" stroke="var(--ok)" stroke-width="2.6" marker-end="url(#arwG)"/>
+          <text x="572" y="89" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--ok)">allowed</text>
+          <rect x="642" y="60" width="150" height="64" rx="13" fill="var(--surface-2)" stroke="var(--border-strong)" stroke-width="1.5"/>
+          <text x="717" y="87" text-anchor="middle" font-size="14.5" font-weight="700" fill="var(--fg)">System</text>
+          <text x="717" y="107" text-anchor="middle" font-size="12" fill="var(--muted)">Files · Shell</text>
+          <line x1="504" y1="184" x2="640" y2="206" stroke="var(--block)" stroke-width="2.6" marker-end="url(#arwB)"/>
+          <text x="572" y="208" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--block)">violation</text>
+          <circle cx="678" cy="210" r="26" fill="color-mix(in srgb,var(--block) 13%, var(--surface))" stroke="var(--block)" stroke-width="2"/>
+          <path d="M669 201l18 18M687 201l-18 18" stroke="var(--block)" stroke-width="2.6" stroke-linecap="round"/>
+          <text x="678" y="256" text-anchor="middle" font-size="12" fill="var(--muted)">blocked</text>
+          <line x1="402" y1="226" x2="402" y2="260" stroke="var(--muted)" stroke-width="2" marker-end="url(#arw)"/>
+          <rect x="250" y="260" width="302" height="32" rx="9" fill="var(--surface-2)" stroke="var(--border-strong)" stroke-width="1.5"/>
+          <text x="345" y="280" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">Evidence log</text>
+          <text x="476" y="280" text-anchor="middle" font-size="12" fill="var(--muted)">hash chain</text>
+          <line x1="552" y1="276" x2="650" y2="276" stroke="var(--muted)" stroke-width="2" marker-end="url(#arw)"/>
+          <rect x="650" y="260" width="162" height="32" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+          <text x="731" y="280" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--accent-ink)">ISO 27001 · NIS2*</text>
+          <rect x="820" y="104" width="122" height="92" rx="13" fill="var(--surface-2)" stroke="var(--border-strong)" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <text x="881" y="138" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--fg)">Policy</text>
+          <text x="881" y="158" text-anchor="middle" font-size="12" fill="var(--muted)">your rules</text>
+          <text x="881" y="176" text-anchor="middle" font-size="12" fill="var(--muted)">allowlist</text>
+          <line x1="820" y1="150" x2="506" y2="150" stroke="var(--border-strong)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arw)"/>
+        </svg>
+        </div>
+        <p class="scrollhint">← scroll to see the full diagram →</p>
+        <div class="arch-fallback">
+          <ol>
+            <li><strong>Coding agent</strong> (e.g. Claude Code) sends a Write, Bash or Edit action.</li>
+            <li><strong>TollWire hook</strong> (PreToolUse) checks it against your policy: paths, commands, dependencies.</li>
+            <li><strong>Allowed</strong> → the action goes to the system (files, shell). <strong>Violation</strong> → blocked.</li>
+            <li>Every decision is written to the <strong>evidence log</strong> (hash chain); entries follow a draft mapping to ISO&nbsp;27001 / NIS2.</li>
+          </ol>
+        </div>
+        <ul class="legend">
+          <li><span class="sw" style="background:var(--ok)"></span>allowed → system</li>
+          <li><span class="sw" style="background:var(--block)"></span>violation → blocked</li>
+          <li><span class="sw" style="background:var(--accent)"></span>control &amp; evidence layer</li>
+        </ul>
+        <figcaption>Every action is checked before execution; every decision produces a record.<br>* Draft mapping to ISO/IEC&nbsp;27001:2022 and NIS2 — not audited, no certification.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- EVIDENCE -->
+  <section id="evidence" class="sec" style="padding-top:0;">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Evidence</span>
+        <h2>Records, not chat logs</h2>
+        <p>Changes, reviews, scans and approvals are mapped — as a <strong>draft, not audited</strong> — to controls from ISO/IEC 27001 and NIS2. TollWire provides evidence; it does not replace an audit or a certification.</p>
+      </div>
+      <div class="tablewrap">
+        <table class="ev">
+          <caption>Example entry (illustrative)</caption>
+          <thead><tr><th scope="col">Time</th><th scope="col">Action</th><th scope="col">Rule</th><th scope="col">Decision</th><th scope="col">Hash</th></tr></thead>
+          <tbody>
+            <tr><td>14:02:11</td><td>Write .git/hooks/pre-commit</td><td><code>protected_path</code></td><td><span class="pill b">blocked</span></td><td><code>a1f9…e4</code></td></tr>
+            <tr><td>14:02:13</td><td>Edit src/api/routes.ts</td><td>—</td><td><span class="pill a">allowed</span></td><td><code>b7c0…92</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="sec" style="padding-top:0;">
+    <div class="wrap">
+      <div class="cta-band">
+        <h2>Interested in the enterprise tool?</h2>
+        <p>We're talking to teams that want to run coding agents in regulated environments — financial services, their IT providers, and other regulated industries. There is no sign-up form and we collect no data through this page: just reach out on GitHub.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href="https://github.com/TollWire/tollwire/issues">Open an issue on GitHub</a>
+          <a class="btn btn-ghost btn-lg" href="https://github.com/TollWire/tollwire">View the repository</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEGAL + PRIVACY -->
+  <section id="legal" class="sec legal" style="padding-top:0;">
+    <div class="wrap">
+      <h2>Legal notice</h2>
+      <p>Project, source code and contact: the public repository <a href="https://github.com/TollWire/tollwire">github.com/TollWire/tollwire</a>. Please report security issues via its <code>SECURITY.md</code> (private vulnerability reporting), not as a public issue. Full provider details will be added before public launch.</p>
+      <h2 id="privacy" style="margin-top:36px;">Privacy</h2>
+      <p>This page sets no cookies, uses no trackers or analytics, loads no external resources, and has no forms — it collects no personal data. For enterprise enquiries, open an issue in the repository; for security reports, see <code>SECURITY.md</code>. If the page is later hosted, the hosting provider's standard server logs may apply; any legal/imprint details required at launch will be added then.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <a class="brand" href="#top" style="font-size:1rem;">
+      <svg width="20" height="20" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="9" fill="var(--accent)"/><path d="M16 7l7 4v5c0 4.4-3 7.1-7 9-4-1.9-7-4.6-7-9v-5l7-4z" fill="#fff" opacity=".96"/><path d="M12.5 16.2l2.4 2.4 4.6-4.9" stroke="var(--accent)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      TollWire
+    </a>
+    <a href="#legal">Legal notice</a>
+    <a href="#privacy">Privacy</a>
+    <a href="https://github.com/TollWire/tollwire">Repository</a>
+    <span style="margin-left:auto;">Early product phase · pilot teams wanted</span>
+    <p class="fine">Licence: PolyForm Noncommercial 1.0.0 — non-commercial use is free; commercial use requires a commercial licence. “Claude Code” is a trademark of Anthropic; TollWire is not affiliated with Anthropic and names it only as an example agent. Text and design of this page were created with AI assistance.</p>
+  </div>
+</footer>
+
+</body>
+</html>
