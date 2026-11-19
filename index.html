@@ -5,10 +5,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>TollWire – Guardrails and evidence for coding agents</title>
-  <!-- DRAFT – noindex. No data collection: no forms, no cookies, no trackers, no external resources. Contact via GitHub.
-       Go-live: confirm Impressum/legal note (host, OP-009); host headers (X-Robots-Tag, CSP, Referrer-Policy, X-Content-Type-Options);
-       finalise the AI-assistance note after human sign-off. German wording lives only in the repository README. -->
+  <title>TollWire – Guardrails and evidence for AI coding agents</title>
+  <meta name="description" content="Policy-enforcement guardrail for AI coding agents like Claude Code: blocks risky file writes, shell commands and new dependencies before they run, with a tamper-evident evidence log. Runs locally.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://tollwire.github.io/tollwire/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="TollWire">
+  <meta property="og:title" content="TollWire – Guardrails and evidence for AI coding agents">
+  <meta property="og:description" content="A policy-enforcement guardrail for AI coding agents (Claude Code): checks writes, shell commands and dependencies before they run, blocks violations, and keeps a tamper-evident evidence log. Not a sandbox.">
+  <meta property="og:url" content="https://tollwire.github.io/tollwire/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="TollWire – Guardrails and evidence for AI coding agents">
+  <meta name="twitter:description" content="Policy-enforcement guardrail for AI coding agents. Blocks risky writes, commands and dependencies before they run. Tamper-evident evidence log. Runs locally.">
+  <!-- No data collection: no forms, cookies, trackers or external resources. German wording lives only in the repository README. -->
   <style>
     /* Layout: sticky blurred nav; editorial hero with product visual; hairline-bordered sections on a cool neutral canvas. */
     :root {
@@ -207,6 +216,30 @@
     @media (max-width:760px){ .grid3{ grid-template-columns:1fr; } .steps{ grid-template-columns:1fr 1fr; } .step{ border-bottom:1px solid var(--hair); } .step:nth-child(odd){ border-right:1px solid var(--hair); } .step:nth-child(even){ border-right:0; } }
     @media (max-width:460px){ .steps{ grid-template-columns:1fr; } .step{ border-right:0 !important; } }
   </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "TollWire",
+    "applicationCategory": "SecurityApplication",
+    "operatingSystem": "Linux, macOS, Windows",
+    "url": "https://tollwire.github.io/tollwire/",
+    "softwareVersion": "0.1.4",
+    "description": "A policy-enforcement guardrail for AI coding agents like Claude Code. It checks file writes, shell commands and new dependencies before they run, blocks detected violations, and keeps a tamper-evident evidence log. The code runs locally. Defense-in-depth, not a sandbox.",
+    "license": "https://polyformproject.org/licenses/noncommercial/1.0.0/",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Non-commercial use is free; commercial use requires a commercial licence."
+    },
+    "sameAs": [
+      "https://github.com/TollWire/tollwire",
+      "https://www.npmjs.com/package/@tollwire/guardrail-plugin",
+      "https://www.npmjs.com/package/@tollwire/evidence-mcp"
+    ]
+  }
+  </script>
 </head>
 <body>
 

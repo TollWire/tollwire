@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tollwire.github.io/tollwire/sitemap.xml
