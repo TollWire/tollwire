@@ -7,10 +7,16 @@
 
 TollWire ergänzt KI-Coding-Agenten um eine Kontrollschicht: Es prüft Schreibzugriffe, Shell-Befehle und neue Abhängigkeiten vor der Ausführung, blockiert erkannte Verstöße und führt ein manipulationserkennendes Protokoll über gemeldete Änderungen, Scans und Freigaben, das Sie als Nachweis in Audits verwenden können. Der Code läuft lokal.
 
+
+> **Lizenz & Kommerzielle Evaluierung (PoC):**  
+> TollWire ist unter der **PolyForm Noncommercial License 1.0.0** verfügbar (kostenfrei für private, wissenschaftliche und nicht-kommerzielle Zwecke).  
+> **Pilotteams gesucht:** Unternehmen und Entwicklerteams, die TollWire im geschäftlichen Umfeld testen möchten, erhalten auf Anfrage eine **kostenfreie, zeitlich begrenzte Proof-of-Concept-Lizenz (PoC)**, bevor eine kostenpflichtige Enterprise-Lizenz erforderlich wird. Für den Start eines Pilotprojekts oder Infos zur Enterprise-Edition nutzen Sie bitte den Kontaktweg in der [LEGAL.md](LEGAL.md).
+
+
 Englische Hauptfassung: [README.md](README.md)
 
 > [!IMPORTANT]
-> **Release-Stand: Version 0.1.3.** Schnittstellen können sich vor 1.0
+> **Release-Stand: Version 0.1.4.** Schnittstellen können sich vor 1.0
 > inkompatibel ändern.
 >
 > **Lizenz:** quelloffen einsehbar, aber kein Open Source: [PolyForm Noncommercial License 1.0.0](LICENSE). Nur nicht-kommerzielle Nutzung; kommerzielle Nutzung braucht vorherige schriftliche Zustimmung (Textform, z. B. E-Mail). Siehe [Lizenz](#lizenz) und [LEGAL.md](LEGAL.md).
