@@ -7,6 +7,11 @@
 
 TollWire adds a policy enforcement layer to AI coding agents: it checks file writes, shell commands and new dependencies before they run, blocks detected violations, and keeps a tamper-evident log of reported changes, scans and approvals that you can use as evidence in audits. The code runs locally.
 
+> **License & Commercial Evaluation (PoC):**  
+> TollWire is source-available under the **PolyForm Noncommercial License 1.0.0** (free for personal, academic, and noncommercial use).  
+> **Looking for Pilot Teams:** Organizations and engineering teams evaluating TollWire in a commercial environment can request a **free, time-limited Proof-of-Concept (PoC) license** before transitioning to a paid Enterprise agreement. To start a pilot or request the Enterprise Edition, please reach out via the contact details in [LEGAL.md](LEGAL.md).
+
+
 German version: [README.de.md](README.de.md)
 
 > [!IMPORTANT]
