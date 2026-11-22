@@ -1,9 +1,12 @@
 import { CONTROL_MAP, EVENT_TYPES, type EventType } from "./controls.js";
+import type { DenyControlRow } from "./ruleKindControls.js";
 import { verifyEntries, type EvidenceEntry, type Verification } from "./log.js";
 
 export interface ReportOptions {
   from?: string;
   to?: string;
+  /** Per-control Guardrail deny summary (enforced blocks) to append to the report. */
+  denies?: DenyControlRow[];
 }
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
@@ -41,6 +44,20 @@ export function renderReport(entries: EvidenceEntry[], options: ReportOptions = 
       if (item) item.count += 1;
     }
   }
+  const denies = options.denies ?? [];
+  const denyLines =
+    denies.length === 0
+      ? []
+      : [
+          "## Guardrail-Blockaden je Control",
+          "",
+          "> Durchgesetzte Blockaden des Guardrail (deny-Entscheidungen) als Nachweis wirksamer Kontrollen (Entwurf, nicht von einem Auditor bestätigt).",
+          "",
+          "| Rahmenwerk | Control | Titel | Blockaden |",
+          "|---|---|---|---|",
+          ...denies.map((d) => `| ${d.framework} | ${d.id} | ${cell(d.title)} | ${d.blocked_count} |`),
+          "",
+        ];
   const lines = [
     "# Evidenzbericht",
     "",
@@ -56,6 +73,7 @@ export function renderReport(entries: EvidenceEntry[], options: ReportOptions = 
     "|---|---|---|---|",
     ...[...coverage.entries()].map(([key, c]) => `| ${c.framework} | ${key.slice(c.framework.length + 1)} | ${c.title} | ${c.count} |`),
     "",
+    ...denyLines,
     "## Ereignisse",
     "",
     "| seq | Zeit (UTC) | Typ | Akteur | Zusammenfassung | Referenz |",

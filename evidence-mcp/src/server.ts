@@ -5,8 +5,9 @@ import { z } from "zod";
 import { anchorTagName, AnchorSchema, createAnchor, MAX_ANCHORS, recordEvent, signedTagCommand, verifyLogWithAnchors } from "./anchor.js";
 import { controlsFor, EVENT_TYPES } from "./controls.js";
 import { isEntryPoint } from "./entry.js";
-import { assertNoSymlinkedDirs, EventInputSchema, EvidenceError, readEntries, readLog, resolveLogRoot, verifyLogRead } from "./log.js";
-import { renderReport } from "./report.js";
+import { assertNoSymlinkedDirs, EventInputSchema, EvidenceError, readEntries, readEvidenceFile, readLog, resolveLogRoot, verifyLogRead } from "./log.js";
+import { rangeBounds, renderReport } from "./report.js";
+import { parseGuardrailDecisions, summarizeDenyControls, type DenyControlRow } from "./ruleKindControls.js";
 import { McpStdioServer, serveStdio } from "./vendor/mcpStdio.js";
 
 export const DEFAULT_LOG = join(".tollgate", "evidence", "log.jsonl");
@@ -53,6 +54,22 @@ export function createServer(configuredLogPath: string, options: ServerOptions =
   const root = options.root;
   /** Every file-reading tool refuses a log location redirected through a symlinked directory. */
   const checkLocation = () => assertNoSymlinkedDirs(logPath, root ?? dirname(resolve(logPath)));
+
+  // Optional: summarize enforced Guardrail deny decisions (schema tollgate.event.v1) as control
+  // evidence, from the operator-configured log path in TOLLGATE_GUARDRAIL_LOG. Best-effort: a missing
+  // or unsafe path omits the section rather than failing the report; read with the same
+  // O_NOFOLLOW/regular-file guard as the evidence log (readEvidenceFile).
+  const readGuardrailDenies = (reportOptions: { from?: string; to?: string }): DenyControlRow[] => {
+    const guardrailLog = process.env.TOLLGATE_GUARDRAIL_LOG;
+    if (!guardrailLog) return [];
+    try {
+      const content = readEvidenceFile(guardrailLog);
+      if (content === null) return [];
+      return summarizeDenyControls(parseGuardrailDecisions(content), rangeBounds(reportOptions));
+    } catch {
+      return [];
+    }
+  };
 
   server.registerTool(
     "record_event",
@@ -158,7 +175,9 @@ export function createServer(configuredLogPath: string, options: ServerOptions =
       try {
         checkLocation();
         const read = readLog(logPath);
-        return text(renderReport(read.entries, { ...(from ? { from } : {}), ...(to ? { to } : {}) }, verifyLogRead(read)));
+        const options = { ...(from ? { from } : {}), ...(to ? { to } : {}) };
+        const denies = readGuardrailDenies(options);
+        return text(renderReport(read.entries, { ...options, ...(denies.length > 0 ? { denies } : {}) }, verifyLogRead(read)));
       } catch (error) {
         return text({ exported: false, reason: errorReason(error, "rendering the evidence report") }, true);
       }
