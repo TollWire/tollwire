@@ -7,15 +7,14 @@
 
 TollWire adds a policy enforcement layer to AI coding agents: it checks file writes, shell commands and new dependencies before they run, blocks detected violations, and keeps a tamper-evident log of reported changes, scans and approvals that you can use as evidence in audits. The code runs locally.
 
-> **License & Commercial Evaluation (PoC):**  
-> TollWire is source-available under the **PolyForm Noncommercial License 1.0.0** (free for personal, academic, and noncommercial use).  
+> **License & Commercial Evaluation (PoC):**\
+> TollWire is source-available under the **PolyForm Noncommercial License 1.0.0** (free for personal, academic, and noncommercial use).\
 > **Looking for Pilot Teams:** Organizations and engineering teams evaluating TollWire in a commercial environment can request a **free, time-limited Proof-of-Concept (PoC) license** before transitioning to a paid Enterprise agreement. To start a pilot or request the Enterprise Edition, please reach out via the contact details in [LEGAL.md](LEGAL.md).
-
 
 German version: [README.de.md](README.de.md)
 
 > [!IMPORTANT]
-> **Release status: version 0.1.4.** Interfaces can change incompatibly before 1.0.
+> **Release status: version 0.1.6.** Interfaces can change incompatibly before 1.0.
 >
 > **License:** source-available, not open source: [PolyForm Noncommercial License 1.0.0](LICENSE). Noncommercial use only; commercial use requires prior permission in writing (text form, e.g. e-mail). See [License](#license) and [LEGAL.md](LEGAL.md).
 
@@ -73,7 +72,7 @@ sequenceDiagram
 ```
 
 > [!NOTE]
-> Output of the built code (guardrail plugin and evidence server 0.1.4, monitor 0.1.0) in a temporary demo project with the
+> Output of the built code (guardrail plugin and evidence server 0.1.3, monitor 0.1.0) in a temporary demo project with the
 > demo account `demo@demo-host`. Long parts are shortened with "…". Some technical identifiers still carry the former name
 > (see [Naming](#naming)). Select an image to see it in full size.
 
@@ -233,6 +232,21 @@ The packages declare no install scripts. If you install a package with npm yours
 
 </details>
 
+## Other coding agents (experimental)
+
+Since version 0.1.6 the guardrail package also contains hook adapters for **OpenAI Codex CLI**, **GitHub Copilot CLI**,
+**xAI Grok Build** and **Cursor Agent** (binaries `tollgate-guard-codex`, `tollgate-guard-copilot`, `tollgate-guard-grok`,
+`tollgate-guard-cursor`). Each adapter passes the agent's pre-execution hook call to the same decision engine as the Claude
+Code hook, so the same policy decides.
+
+> [!NOTE]
+> Experimental: the adapters are tested against the documented hook formats of each agent, not against every agent release.
+> Copilot CLI and Grok Build allow a call when the hook times out or fails; Cursor does so unless the hook is registered with
+> `"failClosed": true` (see the setup guide).
+> The [Limits](#limits) apply unchanged.
+
+Setup per agent: [guardrail-plugin/docs/multi-agent.md](guardrail-plugin/docs/multi-agent.md).
+
 ## Requirements
 
 - Node.js 22, version 22.12.0 or later (the `engines` field of both packages).
@@ -333,7 +347,7 @@ closed).
 <details>
 <summary>Message names and technical identifiers</summary>
 
-Messages shown to you use the name TollWire (`TollWire guardrail: …`, since version 0.1.4). Some technical
+Messages shown to you use the name TollWire (`TollWire guardrail: …`, since version 0.1.3). Some technical
 identifiers still carry the former name TollGate: environment variables (`TOLLGATE_*`), directories (`.tollgate/`,
 `/etc/tollgate/`), the event schema `tollgate.event.v1` and the MCP server names inside the plugins
 (`tollgate-guardrail`, `tollgate-evidence`). They keep working as documented. A later release may rename them; the

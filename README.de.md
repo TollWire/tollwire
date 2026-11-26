@@ -7,16 +7,14 @@
 
 TollWire ergänzt KI-Coding-Agenten um eine Kontrollschicht: Es prüft Schreibzugriffe, Shell-Befehle und neue Abhängigkeiten vor der Ausführung, blockiert erkannte Verstöße und führt ein manipulationserkennendes Protokoll über gemeldete Änderungen, Scans und Freigaben, das Sie als Nachweis in Audits verwenden können. Der Code läuft lokal.
 
-
-> **Lizenz & Kommerzielle Evaluierung (PoC):**  
-> TollWire ist unter der **PolyForm Noncommercial License 1.0.0** verfügbar (kostenfrei für private, wissenschaftliche und nicht-kommerzielle Zwecke).  
+> **Lizenz & Kommerzielle Evaluierung (PoC):**\
+> TollWire ist unter der **PolyForm Noncommercial License 1.0.0** verfügbar (kostenfrei für private, wissenschaftliche und nicht-kommerzielle Zwecke).\
 > **Pilotteams gesucht:** Unternehmen und Entwicklerteams, die TollWire im geschäftlichen Umfeld testen möchten, erhalten auf Anfrage eine **kostenfreie, zeitlich begrenzte Proof-of-Concept-Lizenz (PoC)**, bevor eine kostenpflichtige Enterprise-Lizenz erforderlich wird. Für den Start eines Pilotprojekts oder Infos zur Enterprise-Edition nutzen Sie bitte den Kontaktweg in der [LEGAL.md](LEGAL.md).
-
 
 Englische Hauptfassung: [README.md](README.md)
 
 > [!IMPORTANT]
-> **Release-Stand: Version 0.1.4.** Schnittstellen können sich vor 1.0
+> **Release-Stand: Version 0.1.6.** Schnittstellen können sich vor 1.0
 > inkompatibel ändern.
 >
 > **Lizenz:** quelloffen einsehbar, aber kein Open Source: [PolyForm Noncommercial License 1.0.0](LICENSE). Nur nicht-kommerzielle Nutzung; kommerzielle Nutzung braucht vorherige schriftliche Zustimmung (Textform, z. B. E-Mail). Siehe [Lizenz](#lizenz) und [LEGAL.md](LEGAL.md).
@@ -238,6 +236,20 @@ Der Evidence-Server steht seit Version 0.1.2 auch in der offiziellen MCP Registr
 Die Pakete deklarieren keine Installationsskripte. Wenn Sie ein Paket selbst mit npm installieren, verhindert `--ignore-scripts`, dass npm Lebenszyklusskripte ausführt.
 
 </details>
+
+## Weitere Coding-Agenten (experimentell)
+
+Seit Version 0.1.6 enthält das Guardrail-Paket auch Hook-Adapter für **OpenAI Codex CLI**, **GitHub Copilot CLI**,
+**xAI Grok Build** und **Cursor Agent** (Programme `tollgate-guard-codex`, `tollgate-guard-copilot`, `tollgate-guard-grok`,
+`tollgate-guard-cursor`). Jeder Adapter gibt den Hook-Aufruf des Agenten vor der Ausführung an dieselbe Entscheidungslogik
+wie der Claude-Code-Hook weiter; es entscheidet dieselbe Policy.
+
+> [!NOTE]
+> Experimentell: Die Adapter sind gegen die dokumentierten Hook-Formate der Agenten getestet, nicht gegen jede Version der
+> Agenten. Copilot CLI und Grok Build erlauben einen Aufruf, wenn der Hook in einen Timeout läuft oder fehlschlägt; Cursor
+> ebenso, außer der Hook ist mit `"failClosed": true` eingetragen (siehe Anleitung). Die [Grenzen](#grenzen) gelten unverändert.
+
+Einrichtung je Agent (englisch): [guardrail-plugin/docs/multi-agent.md](guardrail-plugin/docs/multi-agent.md).
 
 ## Voraussetzungen
 

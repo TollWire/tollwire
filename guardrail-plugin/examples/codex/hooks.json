@@ -1,0 +1,17 @@
+{
+  "description": "TollWire guardrail for OpenAI Codex CLI. Place at ~/.codex/hooks.json (user) or .codex/hooks.json (trusted project), then review and trust it with /hooks. No matcher = every tool call is checked (Bash, apply_patch, reads, MCP); the adapter passes non-write tools through. Replace the path with your install location.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/absolute/path/to/guardrail-plugin/dist/codexHookCli.js\"",
+            "timeout": 10,
+            "statusMessage": "TollWire guardrail"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "node \"/absolute/path/to/guardrail-plugin/dist/cursorHookCli.js\"",
+        "matcher": "Shell|Write|Read|Grep|Delete",
+        "failClosed": true,
+        "timeout": 10
+      }
+    ]
+  }
+}

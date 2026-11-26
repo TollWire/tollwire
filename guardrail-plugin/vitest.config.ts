@@ -11,7 +11,7 @@ export default defineConfig({
       provider: "v8",
       include: ["src/**/*.ts"],
       // Executable entries (run on import); covered by the smoke test and the manifest test against a build.
-      exclude: ["src/hookCli.ts", "src/hookCliWin.ts", "src/hookCliPosix.ts", "src/events/verifyBin.ts"],
+      exclude: ["src/hookCli.ts", "src/hookCliWin.ts", "src/hookCliPosix.ts", "src/copilotHookCli.ts", "src/codexHookCli.ts", "src/grokHookCli.ts", "src/cursorHookCli.ts", "src/events/verifyBin.ts"],
       reporter: ["text", "json-summary"],
       thresholds: { statements: 80, branches: 80, functions: 80, lines: 80 },
     },

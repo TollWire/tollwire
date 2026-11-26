@@ -279,6 +279,15 @@ describe("helpers", () => {
     expect(report).toContain("VERLETZT bei seq 1");
     expect(report).toContain("a\\|b c");
   });
+  it("escapes backslashes before pipes so content cannot break out of a cell (CodeQL js/incomplete-sanitization)", () => {
+    // Input `a\|b`: without escaping the backslash first, `|`->`\|` yields `a\\|b` — an escaped backslash plus an
+    // UNescaped pipe that breaks the table cell. Correct output doubles the backslash and escapes the pipe: `a\\\|b`.
+    const entry = { seq: 1, ts: "2026-10-03T00:00:00.000Z", type: "change", summary: "a\\|b", actor: "c:\\u", prev_hash: "1", hash: "2" };
+    const report = renderReport([entry as never], { to: "2030-01-01" });
+    expect(report).toContain("a\\\\\\|b"); // backslash doubled, pipe escaped
+    expect(report).toContain("c:\\\\u"); // lone backslash doubled
+    expect(report).not.toContain("a\\\\|b"); // the vulnerable form (escaped backslash + raw pipe) must not appear
+  });
 });
 
 describe("date handling (Copilot review PR #9)", () => {

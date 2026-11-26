@@ -35,7 +35,7 @@ const client = new Client({ name: "sdk-compat", version: "0.0.0" });
 try {
   await client.connect(transport);
   const info = client.getServerVersion();
-  expect("initialize (serverInfo)", info?.name === "tollgate-evidence" && info?.version === "0.1.4", JSON.stringify(info));
+  expect("initialize (serverInfo)", info?.name === "tollgate-evidence" && info?.version === "0.1.6", JSON.stringify(info));
   expect("initialize (capabilities)", client.getServerCapabilities()?.tools !== undefined);
   expect("protocol version negotiated", negotiated === LATEST_PROTOCOL_VERSION, String(negotiated));
   expect("ping", JSON.stringify(await client.ping()) === "{}");

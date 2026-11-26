@@ -99,6 +99,51 @@ const mcp = spawnSync(process.execPath, ["dist/mcp/server.js"], {
 });
 expect("mcp server answers initialize", mcp.stdout.includes('"tollgate-guardrail"'));
 
+// Multi-agent adapters (Codex, Copilot): run the built binaries end-to-end with each vendor's PreToolUse payload.
+// The project directory is derived from the stdin `cwd` (no git root at /repo), so CLAUDE_PROJECT_DIR is cleared.
+const adapterEnv = { ...process.env, ...logEnv };
+delete adapterEnv.CLAUDE_PROJECT_DIR;
+const adapter = (bin, event) =>
+  spawnSync(process.execPath, [bin], { cwd: root, input: JSON.stringify(event), env: adapterEnv, encoding: "utf8" });
+const codex = (toolName, toolInput) =>
+  adapter("dist/codexHookCli.js", { hook_event_name: "PreToolUse", session_id: "smoke", cwd: "/repo", tool_name: toolName, tool_input: toolInput });
+const copilot = (toolName, toolInput) =>
+  adapter("dist/copilotHookCli.js", { hook_event_name: "PreToolUse", session_id: "smoke", cwd: "/repo", tool_name: toolName, tool_input: toolInput });
+
+const codexSafe = codex("Bash", { command: "ls" });
+expect("codex adapter allows a safe command (exit 0, no stdout)", codexSafe.status === 0 && codexSafe.stdout.trim() === "");
+const codexPush = codex("Bash", { command: "git push --force" });
+expect("codex adapter blocks force push (exit 2, hookSpecificOutput deny)", codexPush.status === 2 && codexPush.stdout.includes('"permissionDecision":"deny"') && codexPush.stdout.includes("hookSpecificOutput"));
+const codexPatch = codex("apply_patch", { command: "*** Begin Patch\n*** Update File: /repo/AGENTS.md\n+x\n*** End Patch" });
+expect("codex adapter blocks apply_patch to a protected path (exit 2)", codexPatch.status === 2 && codexPatch.stdout.includes('"permissionDecision":"deny"'));
+
+const copilotSafe = copilot("Bash", { command: "ls" });
+expect("copilot adapter allows a safe command (exit 0, empty stdout)", copilotSafe.status === 0 && copilotSafe.stdout.trim() === "");
+const copilotPush = copilot("Bash", { command: "git push --force" });
+expect("copilot adapter blocks force push (exit 2, deny JSON)", copilotPush.status === 2 && copilotPush.stdout.includes('"permissionDecision":"deny"') && copilotPush.stdout.includes("Force push"));
+const copilotWrite = copilot("Write", { file_path: "/repo/AGENTS.md", content: "x" });
+expect("copilot adapter blocks a write to a protected path (exit 2)", copilotWrite.status === 2 && copilotWrite.stdout.includes('"permissionDecision":"deny"'));
+
+// Grok: deny = {"decision":"deny"} on stdout + exit 2; allow = exit 0, no stdout. camelCase envelope.
+const grok = (toolName, toolInput) =>
+  adapter("dist/grokHookCli.js", { hook_event_name: "PreToolUse", sessionId: "smoke", cwd: "/repo", toolName, toolInput });
+const grokSafe = grok("run_terminal_command", { command: "ls" });
+expect("grok adapter allows a safe command (exit 0, no stdout)", grokSafe.status === 0 && grokSafe.stdout.trim() === "");
+const grokPush = grok("run_terminal_command", { command: "git push --force" });
+expect("grok adapter blocks force push (exit 2, decision deny)", grokPush.status === 2 && grokPush.stdout.includes('"decision":"deny"'));
+const grokEdit = grok("search_replace", { file_path: "/repo/AGENTS.md" });
+expect("grok adapter blocks an edit to a protected path (exit 2)", grokEdit.status === 2 && grokEdit.stdout.includes('"decision":"deny"'));
+
+// Cursor: deny = {"permission":"deny"} on stdout + exit 2; allow = {"permission":"allow"} + exit 0. snake_case envelope.
+const cursor = (toolName, toolInput) =>
+  adapter("dist/cursorHookCli.js", { hook_event_name: "preToolUse", tool_use_id: "smoke", cwd: "/repo", tool_name: toolName, tool_input: toolInput });
+const cursorSafe = cursor("Shell", { command: "ls" });
+expect("cursor adapter allows a safe command (exit 0, permission allow)", cursorSafe.status === 0 && cursorSafe.stdout.includes('"permission":"allow"'));
+const cursorPush = cursor("Shell", { command: "git push --force" });
+expect("cursor adapter blocks force push (exit 2, permission deny)", cursorPush.status === 2 && cursorPush.stdout.includes('"permission":"deny"'));
+const cursorDelete = cursor("Delete", { file_path: "/repo/AGENTS.md" });
+expect("cursor adapter blocks a delete of a protected path (exit 2)", cursorDelete.status === 2 && cursorDelete.stdout.includes('"permission":"deny"'));
+
 if (failures.length) {
   console.error(`Smoke test failed: ${failures.join(", ")}`);
   process.exit(1);

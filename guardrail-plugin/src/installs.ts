@@ -69,6 +69,12 @@ const PIP_UNVERIFIABLE = new Set(["-r", "--requirement", "-e", "--editable", "-i
 /** xargs options that consume the next word (GNU; `-e`, `-i`, `-l` take their value only attached). */
 const XARGS_VALUE_FLAGS = new Set(["-a", "-d", "-E", "-I", "-L", "-n", "-P", "-s", "--arg-file", "--delimiter", "--max-lines", "--max-args", "--max-procs", "--max-chars", "--process-slot-var"]);
 const FIND_EXEC = new Set(["-exec", "-execdir", "-ok", "-okdir"]);
+/**
+ * Programs that run a further command whose position their own options hide (container runners, privilege and namespace
+ * tools, sandboxes). Every later word that starts a command this check knows is analyzed from there (#125), like the
+ * generic rule of the write check; an install found at any candidate fails the call.
+ */
+const EXEC_RUNNERS = new Set(["docker", "podman", "nerdctl", "setpriv", "chroot", "nsenter", "systemd-run", "bwrap", "firejail"]);
 /** Options of uvx / uv tool run / uv run / pipx run that name an extra package (checked against the allowlist). */
 const PY_RUN_PACKAGE_FLAGS = new Set(["--from", "--with", "--spec"]);
 /** Options of those commands that add a package source or read a package list we cannot see (fail closed). */
@@ -639,6 +645,16 @@ function commandStart(words: ShellWord[], split: { script?: string } = {}): numb
   return -1;
 }
 
+/** True if the word names a command this check analyzes (installer, shell, interpreter or wrapper). */
+function startsKnownCommand(word: string): boolean {
+  const name = (word.split("/").pop() as string).toLowerCase().replace(/\.(exe|cmd)$/, "");
+  return (
+    SHELLS.has(name) || NPM_TOOLS.has(name) || name in WRAPPERS || EXEC_RUNNERS.has(name) ||
+    ["npx", "pnpx", "bunx", "pipx", "py", "uv", "uvx", "poetry", "pipenv", "su", "runuser", "xargs", "flock", "watch", "parallel", "sem", "find", "script", "sg"].includes(name) ||
+    name === "pip" || /^pip\d*(\.\d+)?$/.test(name) || /^python[\d.]*$/.test(name)
+  );
+}
+
 /** A plain word for a command name that the check puts in front of words (`python -m uv ...` → `uv ...`). */
 function syntheticWord(value: string): ShellWord {
   return { value, start: -1, end: -1, quoted: false, executes: false, splittable: false, expands: false, redirect: false };
@@ -766,6 +782,40 @@ function commandProblems(all: ShellWord[], allowed: InstallPolicy, depth: number
       if (depth >= MAX_DEPTH) return [TOO_DEEP];
       problems.push(...commandProblems(args.slice(k + 1, end), allowed, depth + 1));
       k = end;
+    }
+    return [...new Set(problems)];
+  }
+  if (exe === "script") {
+    // `script [opts] -c CMD [file]` (also `-qc`, `--command`): CMD runs through the shell (#125).
+    for (let k = 0; k < args.length; k++) {
+      const v = (args[k] as ShellWord).value;
+      const [flag, inline] = splitFlag(v);
+      if (inline !== null && flag === "--command") return nested(inline, allowed, depth);
+      if (v === "--command" || /^-[A-Za-z]*c$/.test(v)) {
+        const script = args[k + 1];
+        return script === undefined ? [] : nested(script.value, allowed, depth);
+      }
+    }
+    return [];
+  }
+  if (exe === "sg") {
+    // `sg [-] GROUP [-c] COMMAND`: sg runs the command string through /bin/sh (#125).
+    let k = 0;
+    if (args[k]?.value === "-") k++;
+    k++;
+    if (args[k]?.value === "-c") {
+      const script = args[k + 1];
+      return script === undefined ? [] : nested(script.value, allowed, depth);
+    }
+    return k < args.length ? nested(args.slice(k).map((w) => w.value).join(" "), allowed, depth) : [];
+  }
+  if (EXEC_RUNNERS.has(exe)) {
+    if (depth >= MAX_DEPTH) return [TOO_DEEP];
+    const problems: string[] = [];
+    for (let k = 0; k < args.length; k++) {
+      const v = cleanWord(args[k] as ShellWord);
+      if (v === null || !startsKnownCommand(v)) continue;
+      problems.push(...commandProblems(args.slice(k), allowed, depth + 1));
     }
     return [...new Set(problems)];
   }

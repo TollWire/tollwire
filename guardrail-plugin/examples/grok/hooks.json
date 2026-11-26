@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "run_terminal_command|search_replace|str_replace|read_file|grep|list_dir|Bash|Write|Edit|MultiEdit|Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/absolute/path/to/guardrail-plugin/dist/grokHookCli.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

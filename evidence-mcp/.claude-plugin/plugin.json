@@ -1,6 +1,6 @@
 {
   "name": "tollwire-evidence",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "Tamper-evident evidence log for reported agent changes, scans and approvals, with a draft ISO 27001 / NIS2 control mapping (not audited).",
   "author": { "name": "TollWire", "url": "https://github.com/TollWire" },
   "homepage": "https://github.com/TollWire/tollwire/tree/main/evidence-mcp#readme",

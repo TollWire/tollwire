@@ -24,7 +24,9 @@ function inRange(entry: EvidenceEntry, bounds: { start: number; end: number }): 
 }
 
 function cell(text: string): string {
-  return text.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+  // Escape backslashes FIRST, then pipes: otherwise an input `\|` would become `\\|` (an escaped backslash followed
+  // by an UNescaped pipe), which breaks out of the Markdown table cell (CodeQL js/incomplete-sanitization).
+  return text.replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 }
 
 /** Markdown evidence report: integrity status, coverage per control, event list. */

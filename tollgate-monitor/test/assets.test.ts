@@ -36,5 +36,8 @@ describe("visible name", () => {
     expect(html).toContain("<h1>TollWire monitor</h1>");
     for (const [name, asset] of Object.entries(ASSETS)) expect(asset.body, name).not.toContain("TollGate");
     expect(html).toContain("tollgate-control unlock");
+    // Acceptance finding 3 (#85): sudo does not search /opt/tollgate/sbin (secure_path); the hint names the absolute path.
+    expect(html).toContain("sudo /opt/tollgate/sbin/tollgate-control unlock");
+    expect(html).not.toContain("<code>sudo tollgate-control");
   });
 });

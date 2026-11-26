@@ -1,6 +1,6 @@
 {
   "name": "@tollwire/guardrail-plugin",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "Guardrail plugin for coding agents: enforces protected paths, blocked commands and a dependency allowlist via hooks and MCP.",
   "license": "PolyForm-Noncommercial-1.0.0",
   "repository": {
@@ -27,6 +27,10 @@
   "bin": {
     "tollgate-events": "dist/events/verifyBin.js",
     "tollgate-guard": "dist/hookCli.js",
+    "tollgate-guard-codex": "dist/codexHookCli.js",
+    "tollgate-guard-copilot": "dist/copilotHookCli.js",
+    "tollgate-guard-cursor": "dist/cursorHookCli.js",
+    "tollgate-guard-grok": "dist/grokHookCli.js",
     "tollgate-guardrail-mcp": "dist/mcp/server.js",
     "tollgate-taint": "dist/taintCli.js"
   },
@@ -36,7 +40,7 @@
     ".mcp.json",
     "hooks/",
     "policy/",
-    "docs/",
+    "docs/events-v1.md",
     "npm-shrinkwrap.json",
     "LICENSE",
     "NOTICE",

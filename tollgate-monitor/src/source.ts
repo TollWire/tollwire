@@ -76,8 +76,11 @@ export interface VerifyResult {
   findings: ChainFinding[];
   more_findings: number;
   read_findings: SourceFinding[];
-  /** Spool only: events inside relay records that were checked, and records the relay itself marked as not ok. */
-  embedded: { checked: number; relay_flagged: number } | null;
+  /**
+   * Spool only: events inside relay records that were checked, records the relay itself marked as not ok, and checked
+   * events that arrived after a later event of the same user chain (a replay, for example after a reboot; not a finding).
+   */
+  embedded: { checked: number; relay_flagged: number; replayed: number } | null;
   checked_at: string;
 }
 
@@ -309,9 +312,13 @@ export class FileSource implements EventSource {
     const listing = this.files();
     const readFindings: SourceFinding[] = [...listing.findings];
     const verifier = new ChainVerifier();
-    const embeddedLast = new Map<string, { seq: number; hash: string }>();
+    // Embedded user events per chain and seq. The links are checked by seq after all files are read, not by line position:
+    // the relay may deliver earlier events of a chain again later (replay, issue #88).
+    const embeddedChains = new Map<string, Map<number, EmbeddedLink>>();
+    const embeddedMax = new Map<string, number>();
     const embeddedSeen = new Set<string>();
     let embeddedChecked = 0;
+    let embeddedReplayed = 0;
     let relayFlagged = 0;
     let budget = this.limits.verifyBytes;
     let complete = true;
@@ -347,18 +354,27 @@ export class FileSource implements EventSource {
             embeddedChecked += 1;
             const chain = inner.chain_id as string;
             const seq = inner.seq as number;
-            const prior = embeddedLast.get(chain);
-            // The first event seen of a chain may start anywhere (retention); after that the links must hold.
-            if (prior !== undefined && inner.type !== "chain_start" && (seq !== prior.seq + 1 || inner.prev_hash !== prior.hash)) {
-              verifier.note("chain_broken", file.name, line.no, "embedded events of a user chain are not contiguous");
+            let links = embeddedChains.get(chain);
+            if (links === undefined) {
+              links = new Map();
+              embeddedChains.set(chain, links);
             }
-            embeddedLast.set(chain, { seq, hash: inner.hash as string });
+            const max = embeddedMax.get(chain);
+            if (max !== undefined && seq < max) embeddedReplayed += 1;
+            if (max === undefined || seq > max) embeddedMax.set(chain, seq);
+            const known = links.get(seq);
+            if (known !== undefined) {
+              if (known.hash !== inner.hash) verifier.note("chain_broken", file.name, line.no, "two different events with the same seq in a user chain");
+            } else {
+              links.set(seq, { hash: inner.hash as string, prev: inner.prev_hash as string, start: inner.type === "chain_start", file: file.name, line: line.no });
+            }
           }
         }
         if ((i + 1) % BATCH === 0) await yieldToLoop();
       }
       await yieldToLoop();
     }
+    checkEmbeddedLinks(embeddedChains, verifier);
     const report = verifier.report();
     const ok = complete && report.findings.length === 0 && report.moreFindings === 0 && readFindings.length === 0;
     return {
@@ -370,13 +386,41 @@ export class FileSource implements EventSource {
       findings: report.findings,
       more_findings: report.moreFindings,
       read_findings: readFindings.slice(0, 100),
-      embedded: this.cfg.kind === "spool" ? { checked: embeddedChecked, relay_flagged: relayFlagged } : null,
+      embedded: this.cfg.kind === "spool" ? { checked: embeddedChecked, relay_flagged: relayFlagged, replayed: embeddedReplayed } : null,
       checked_at: new Date(nowMs).toISOString(),
     };
   }
 }
 
 /** Event as the API shows it: masked strings, no prototype tricks. */
+interface EmbeddedLink {
+  hash: string;
+  prev: string;
+  start: boolean;
+  file: string;
+  line: number;
+}
+
+/**
+ * Checks the embedded events of each user chain in seq order: the first seq seen may start anywhere (retention, archived
+ * spool files); after it every seq must follow without gap and link to its predecessor. A chain_start is not linked to an
+ * earlier seq. Findings point to the later event of a broken pair.
+ */
+function checkEmbeddedLinks(chains: Map<string, Map<number, EmbeddedLink>>, verifier: ChainVerifier): void {
+  for (const links of chains.values()) {
+    const seqs = [...links.keys()].sort((a, b) => a - b);
+    for (let i = 1; i < seqs.length; i += 1) {
+      const seq = seqs[i] as number;
+      const prevSeq = seqs[i - 1] as number;
+      const cur = links.get(seq) as EmbeddedLink;
+      if (cur.start) continue;
+      if (seq !== prevSeq + 1 || cur.prev !== (links.get(prevSeq) as EmbeddedLink).hash) {
+        verifier.note("chain_broken", cur.file, cur.line, "embedded events of a user chain are not contiguous");
+      }
+    }
+  }
+}
+
 export function present(v: ViewEvent): { event: unknown; relay: unknown } {
   return { event: maskDeep(v.event), relay: v.relay === null ? null : maskDeep(v.relay) };
 }

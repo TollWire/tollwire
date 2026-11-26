@@ -314,6 +314,30 @@ describe("admin view over the relay spool", () => {
     expect((await m2.auth("/api/v1/verify")).json().findings[0]).toMatchObject({ kind: "chain_broken", detail: "embedded events of a user chain are not contiguous" });
   });
 
+  it("accepts a replay of earlier events of a user chain and reports it, independent of the line position (#88)", async () => {
+    const user = chain([{}, {}, {}, {}, {}], CHAIN, 4242); // seq 1..6
+    const rec = (i: number) => ({ type: "relay_record", data: relayRecord(user[i] as Record<string, unknown>) });
+    const dir = spoolDir([]).dir;
+    // live seq 4, 5; after a reboot the relay replays seq 1-3; then live seq 6
+    writeLines(join(dir, `relay-${DAY}.jsonl`), chain([rec(3), rec(4), rec(0), rec(1), rec(2), rec(5)], "dddddddd-dddd-4ddd-8ddd-dddddddddddd", UID), 0o640);
+    const m = await startMonitor(spoolSource(dir), { mode: "admin" });
+    const r = (await m.auth("/api/v1/verify")).json();
+    expect(r.findings).toEqual([]);
+    expect(r).toMatchObject({ ok: true, embedded: { checked: 6, replayed: 3 } });
+  });
+
+  it("still finds a fork: two different events with the same seq in one user chain", async () => {
+    const user = chain([{}, {}], CHAIN, 4242);
+    const fork = makeEvent({ chain: CHAIN, seq: 2, prev: user[0]?.hash as string, uid: 4242, toolName: "Evil", id: "00000000-0000-4000-8000-0000000000ff" });
+    const dir = spoolDir([]).dir;
+    const recs = [user[0], user[1], fork, user[2]].map((e) => ({ type: "relay_record", data: relayRecord(e as Record<string, unknown>) }));
+    writeLines(join(dir, `relay-${DAY}.jsonl`), chain(recs, "dddddddd-dddd-4ddd-8ddd-dddddddddddd", UID), 0o640);
+    const m = await startMonitor(spoolSource(dir), { mode: "admin" });
+    const r = (await m.auth("/api/v1/verify")).json();
+    expect(r.ok).toBe(false);
+    expect(r.findings).toContainEqual(expect.objectContaining({ kind: "chain_broken", detail: "two different events with the same seq in a user chain", line: 4 }));
+  });
+
   it("counts a duplicate delivery once", async () => {
     const { inner } = setup();
     const dir = spoolDir([]).dir;

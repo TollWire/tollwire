@@ -40,7 +40,7 @@ const HTML = `<!doctype html>
 <div id="verify-result" class="result"></div>
 <section id="admin" hidden>
 <h2>Locks (administrator)</h2>
-<p class="notice">A lock blocks tool calls of Claude Code that run the TollWire hook. It does not stop running processes or other tools. Locks are removed on the host with <code>sudo tollgate-control unlock</code>, not here.</p>
+<p class="notice">A lock blocks tool calls of Claude Code that run the TollWire hook. It does not stop running processes or other tools. Locks are removed on the host with <code>sudo /opt/tollgate/sbin/tollgate-control unlock &lt;LOCK-ID&gt;</code> (absolute path: /opt/tollgate/sbin is not in the secure_path of sudo), not here.</p>
 <table id="locks"><thead></thead><tbody></tbody></table>
 <div class="bar">
 <label for="a-kind">Lock</label>
@@ -198,7 +198,7 @@ const JS = String.raw`"use strict";
       clear(box);
       box.appendChild(el("span", v.ok ? "Chain valid" : "Chain NOT valid", v.ok ? "ok" : "bad"));
       var text = " files " + v.files + ", events " + v.events + ", chains " + v.chains + (v.complete ? "" : ", incomplete (limit)");
-      if (v.embedded) text += ", embedded " + v.embedded.checked + ", flagged by relay " + v.embedded.relay_flagged;
+      if (v.embedded) text += ", embedded " + v.embedded.checked + ", flagged by relay " + v.embedded.relay_flagged + ", replayed " + (v.embedded.replayed || 0);
       box.appendChild(el("span", text));
       v.findings.slice(0, 20).forEach(function (f) { box.appendChild(el("div", f.kind + " " + f.file + ":" + f.line + " " + f.detail, "bad")); });
       v.read_findings.slice(0, 20).forEach(function (f) { box.appendChild(el("div", f.kind + " " + f.file + " " + f.detail, "bad")); });

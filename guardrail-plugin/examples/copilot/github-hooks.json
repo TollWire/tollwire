@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "bash": "node /absolute/path/to/guardrail-plugin/dist/copilotHookCli.js",
+        "timeoutSec": 10
+      }
+    ]
+  }
+}

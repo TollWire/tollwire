@@ -189,6 +189,10 @@ const ENV = spec("uCSP", "", ["--unset", "--chdir", "--split-string"]);
 const XARGS = spec("adEILnPs", "eil", ["--arg-file", "--delimiter", "--max-lines", "--max-args", "--max-procs", "--max-chars", "--process-slot-var"]);
 const FLOCK = spec("wEc", "", ["--timeout", "--wait", "--conflict-exit-code", "--command"]);
 const SU = spec("csgGw", "", ["--command", "--session-command", "--shell", "--group", "--supp-group", "--whitelist-environment"]);
+/** `runuser -u USER [--] COMMAND [ARGS]`: like SU, plus `-u`/`--user` with a value; the command follows directly (#125). */
+const RUNUSER_DIRECT = spec("csgGwu", "", ["--command", "--session-command", "--shell", "--group", "--supp-group", "--whitelist-environment", "--user"]);
+/** Container runners whose `run`/`exec` run a command inside a container that may mount the project (#125). */
+const CONTAINER_RUNNERS = new Set(["docker", "podman", "nerdctl"]);
 const SCRIPT = spec("cEIOBTm", "t", ["--command", "--echo", "--log-in", "--log-out", "--log-io", "--log-timing", "--logging-format"]);
 const UNSHARE = spec("SGRw", "", ["--setuid", "--setgid", "--root", "--wd", "--propagation", "--map-user", "--map-group", "--map-users", "--map-groups", "--setgroups"]);
 const SUDO_SHELL = ["-s", "-i", "--shell", "--login"];
@@ -325,7 +329,7 @@ const STARTERS = new Set([
   "timeout", "time", "env", "xargs", "flock", "unshare", "taskset", "chrt", "setarch", "linux32", "linux64", "fakeroot",
   "strace", "ltrace", "xvfb-run", "firejail", "watch", "parallel", "sem", "sed", "perl", "ruby", "python", "python3", "node",
   "nodejs", "bun", "deno", "php", "dd", "sort", "split", "mmv", "cpio", "tar", "unzip", "patch", "find", "git", "su", "runuser",
-  "script", "chroot", "fc", "eval", "source", ".", "curl", "wget", "uniq", "shuf", "sponge", "trap", "alias", "complete",
+  "script", "sg", "chroot", "fc", "eval", "source", ".", "curl", "wget", "uniq", "shuf", "sponge", "trap", "alias", "complete",
   "compgen", "mapfile", "readarray", "enable", "sudoedit", "yq", "xxd", "history", "less", "info", "base64", "sdiff",
 ]);
 /** Starter names that are also common subcommands or words (`gh pr view`, `kubectl patch`, `npm view`): not used by the generic rule. */
@@ -882,11 +886,13 @@ class Analyzer {
       if (DATA_COMMANDS.has(name)) return;
       // Unknown program: if one of its arguments names a known writer, shell, interpreter or wrapper and is
       // followed by further words, the program may run it (e.g. a wrapper we do not model). Analyze from there.
+      // Container runners: the image name may itself be a starter (`node`, `python`), so every candidate is analyzed (#125).
+      const every = CONTAINER_RUNNERS.has(name);
       for (let k = i + 1; k < args.length - 1; k += 1) {
         const t = args[k] as Tok;
         if (plain(t) && STARTERS.has(baseName(t.value)) && !AMBIGUOUS_STARTERS.has(baseName(t.value))) {
           this.invocation(args.slice(k), bases, depth, stdin);
-          return;
+          if (!every) return;
         }
       }
       return;
@@ -934,6 +940,7 @@ class Analyzer {
     else if (name === "find") this.find(args, bases, depth);
     else if (name === "git") this.git(args, bases, depth);
     else if (name === "su" || name === "runuser") this.su(name, args, bases, depth);
+    else if (name === "sg") this.sg(args, bases, depth);
     else if (name === "script") this.scriptCommand(args, bases, depth);
     else if (name === "chroot" || name === "fc" || name === "eval") this.add("opaque", name, name);
     else if (name === "source" || name === ".") this.source(name, args, bases, depth, stdin);
@@ -1155,6 +1162,26 @@ class Analyzer {
   private su(name: string, args: Tok[], bases: string[] | null, depth: number): void {
     const p = parseOptions(args, 0, SU, false);
     for (const s of values(p, "-c", "--command", "--session-command")) this.inlineScript(s, bases, depth, `${name} -c`);
+    if (name === "runuser") {
+      // `runuser -u USER [--] COMMAND [ARGS]`: the command runs directly, without a shell string (#125).
+      const d = parseOptions(args, 0, RUNUSER_DIRECT, true);
+      if (values(d, "-u", "--user").length > 0 && values(d, "-c", "--command", "--session-command").length === 0 && d.index < args.length) {
+        this.invocation(args.slice(d.index), bases, depth, null);
+      }
+    }
+  }
+
+  /** `sg [-] GROUP [-c] COMMAND`: sg runs the command string through /bin/sh (#125). */
+  private sg(args: Tok[], bases: string[] | null, depth: number): void {
+    let k = 0;
+    if (args[k]?.value === "-") k += 1;
+    k += 1; // group
+    if (args[k]?.value === "-c") {
+      const script = args[k + 1];
+      if (script !== undefined) this.inlineScript(script, bases, depth, "sg -c");
+      return;
+    }
+    if (k < args.length) this.invocation(args.slice(k), bases, depth, null);
   }
 
   private scriptCommand(args: Tok[], bases: string[] | null, depth: number): void {

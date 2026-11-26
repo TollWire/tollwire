@@ -3,7 +3,7 @@
   "name": "io.github.TollWire/evidence-mcp",
   "title": "TollWire Evidence",
   "description": "Tamper-evident log of agent changes, scans and approvals with draft ISO 27001/NIS2 control mapping.",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "repository": {
     "url": "https://github.com/TollWire/tollwire",
     "source": "github",
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@tollwire/evidence-mcp",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
