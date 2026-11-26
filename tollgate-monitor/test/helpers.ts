@@ -43,6 +43,8 @@ export interface Spec {
   data?: Record<string, unknown>;
   id?: string;
   host?: string;
+  /** Coding agent that triggered the event (`agent.name`). */
+  agent?: string;
 }
 
 export function makeEvent(s: Spec): Record<string, unknown> {
@@ -59,6 +61,7 @@ export function makeEvent(s: Spec): Record<string, unknown> {
     source: { component: "tollgate-guardrail", version: "0.1.0" },
     prev_hash: s.prev,
   };
+  if (s.agent !== undefined) base.agent = { name: s.agent };
   if (type === "decision" || type === "tool_result") {
     base.claude = { session_id: s.session ?? "s-1", tool_use_id: "tu-1", agent_id: null, agent_type: null, hook_event: "PreToolUse", permission_mode: "default" };
     base.tool = { name: s.toolName ?? "Bash", programs: ["git"], paths: [], effects: [], truncated: false };

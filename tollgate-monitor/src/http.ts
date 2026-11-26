@@ -74,6 +74,7 @@ const JSON_TYPE = /^application\/json(?:; ?charset=utf-8)?$/i;
 const TYPE = /^[a-z_]{1,40}$/;
 const SESSION = /^[A-Za-z0-9_.:-]{1,128}$/;
 const UID = /^[0-9]{1,10}$/;
+const AGENT = /^[a-z][a-z0-9-]{0,31}$/;
 const LIMIT = /^[0-9]{1,4}$/;
 const SINCE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,3})?Z$/;
 
@@ -240,6 +241,9 @@ export class Monitor {
         return;
       case "/api/v1/sessions":
         this.sessions(res, query, now);
+        return;
+      case "/api/v1/agents":
+        this.agents(res, query, now);
         return;
       case "/api/v1/stream":
         this.noQuery(query);
@@ -409,6 +413,11 @@ export class Monitor {
       if (!SESSION.test(session)) throw new HttpError(400, "invalid_parameter");
       out.session = session;
     }
+    const agent = seen.get("agent");
+    if (agent !== undefined) {
+      if (!AGENT.test(agent)) throw new HttpError(400, "invalid_parameter");
+      out.agent = agent;
+    }
     const user = seen.get("user");
     if (user !== undefined) {
       if (!UID.test(user)) throw new HttpError(400, "invalid_parameter");
@@ -433,13 +442,15 @@ export class Monitor {
   }
 
   private describe(q: Query): Record<string, unknown> {
-    return { limit: q.limit, since: new Date(q.sinceMs).toISOString(), type: q.type ?? null, session: q.session ?? null, user: q.user ?? null };
+    const out: Record<string, unknown> = { limit: q.limit, since: new Date(q.sinceMs).toISOString(), type: q.type ?? null, session: q.session ?? null, user: q.user ?? null };
+    if (q.agent !== undefined) out.agent = q.agent;
+    return out;
   }
 
   // ---- routes ---------------------------------------------------------------------------------------------------
 
   private events(res: ServerResponse, query: string, now: number): void {
-    const q = this.params(query, this.allowed("limit", "since", "type", "session", "user"), now);
+    const q = this.params(query, this.allowed("limit", "since", "type", "session", "user", "agent"), now);
     this.audit("events", this.describe(q));
     let listing;
     try {
@@ -464,7 +475,7 @@ export class Monitor {
   }
 
   private sessions(res: ServerResponse, query: string, now: number): void {
-    const q = this.params(query, this.allowed("since", "type", "session", "user"), now);
+    const q = this.params(query, this.allowed("since", "type", "session", "user", "agent"), now);
     this.audit("sessions", this.describe(q));
     let result;
     try {
@@ -473,6 +484,18 @@ export class Monitor {
       throw new HttpError(500, "read_failed");
     }
     this.json(res, 200, { sessions: maskDeep(result.sessions), truncated: result.truncated, findings: maskDeep(result.findings.slice(0, 50)) });
+  }
+
+  private agents(res: ServerResponse, query: string, now: number): void {
+    const q = this.params(query, this.allowed("since", "user"), now);
+    this.audit("agents", this.describe(q));
+    let result;
+    try {
+      result = this.opts.source.agents({ ...q, limit: this.limits.maxLimit });
+    } catch {
+      throw new HttpError(500, "read_failed");
+    }
+    this.json(res, 200, { agents: maskDeep(result.agents), truncated: result.truncated, findings: maskDeep(result.findings.slice(0, 50)) });
   }
 
   private verify(res: ServerResponse, now: number): void {

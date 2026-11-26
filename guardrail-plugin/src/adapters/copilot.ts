@@ -17,8 +17,8 @@
 // allow, the adapter writes **nothing** and exits 0, so Copilot's own permission flow proceeds unchanged — the
 // guardrail denies violations, it never auto-approves a call Copilot would otherwise prompt for.
 import { runHook, type HookDeps } from "../hook.js";
-import { WRITE_TOOLS } from "../evaluate.js";
 import { resolveProjectDir } from "./projectDir.js";
+import { claudeToolName } from "./translate.js";
 
 export interface AdapterOutput {
   code: number;
@@ -26,18 +26,9 @@ export interface AdapterOutput {
   stderr: string;
 }
 
-// Tools the engine evaluates (Claude names). A write under any other name is treated by the engine as ALLOW.
-const CHECKED: ReadonlySet<string> = new Set(["Bash", ...WRITE_TOOLS]);
-
 // Runtime -> Claude tool-name map for the camelCase fallback. PascalCase registration is required for
 // write-blocking; the fallback reliably covers the shell only.
 const CAMEL_TOOL_MAP: Readonly<Record<string, string>> = { bash: "Bash", shell: "Bash" };
-
-// Copilot runtime write-tool names (lowercase). If one reaches us as a raw `tool_name` that the engine does not
-// check, a write would pass unchecked — fail closed instead.
-const RAW_WRITE_TOOLS: ReadonlySet<string> = new Set([
-  "edit", "create", "write", "multiedit", "notebookedit", "str_replace", "str_replace_editor", "apply_patch",
-]);
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -52,10 +43,12 @@ function deny(reason: string): AdapterOutput {
 function toClaude(object: Record<string, unknown>): Record<string, unknown> | null {
   // PascalCase registration: already Claude-shaped (tool_name + tool_input).
   if (typeof object.tool_name === "string") {
-    const name = object.tool_name;
-    // A raw (unmapped) write-tool name the engine would not check: fail closed rather than pass a write through.
-    if (!CHECKED.has(name) && RAW_WRITE_TOOLS.has(name.toLowerCase())) return null;
-    return { ...object, hook_event_name: "PreToolUse" };
+    // A raw (unmapped) write-class tool name the engine would not check: fail closed rather than pass a write through
+    // (shared write-class detection, see translate.ts). Raw Copilot write tools have their own argument shapes, so only
+    // a case variant of the shell is normalized; `write`/`edit` and the like are denied.
+    const checked = claudeToolName(object.tool_name, "shell");
+    if (checked.kind === "deny") return null;
+    return { ...object, tool_name: checked.name, hook_event_name: "PreToolUse" };
   }
   // camelCase fallback: toolName + toolArgs (a JSON string per the official contract).
   if (typeof object.toolName === "string") {
@@ -80,7 +73,9 @@ function toClaude(object: Record<string, unknown>): Record<string, unknown> | nu
 }
 
 /** Pure decision: Copilot stdin JSON -> adapter output. Never throws for input problems (fails closed to a deny). */
-export function copilotDecision(stdin: string, env: NodeJS.ProcessEnv, cwd: string, deps: HookDeps = {}): AdapterOutput {
+export function copilotDecision(stdin: string, env: NodeJS.ProcessEnv, cwd: string, rawDeps: HookDeps = {}): AdapterOutput {
+  // The agent name comes from this adapter, never from the caller or from the input.
+  const deps: HookDeps = { ...rawDeps, agent: "copilot" };
   let object: Record<string, unknown>;
   try {
     object = asRecord(JSON.parse(stdin));

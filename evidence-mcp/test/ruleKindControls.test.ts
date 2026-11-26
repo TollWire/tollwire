@@ -38,6 +38,14 @@ describe("parseGuardrailDecisions", () => {
     expect(decisions[1]!.tool?.effects).toEqual(["network"]);
   });
 
+  it("ignores the additive agent member and skips enforcement_status events", () => {
+    const withAgent = JSON.stringify({ type: "decision", ts: "2026-11-26T00:00:00.000Z", agent: { name: "codex" }, tool: { name: "Bash" }, decision: { outcome: "deny", rule_kind: "blocked_command", rule_id: "x" } });
+    const status = JSON.stringify({ type: "enforcement_status", ts: "2026-11-26T00:00:01.000Z", agent: { name: "grok" }, data: { status: "DEGRADED" } });
+    const decisions = parseGuardrailDecisions([withAgent, status].join("\n"));
+    expect(decisions).toHaveLength(1);
+    expect(decisions[0]!.decision.rule_kind).toBe("blocked_command");
+  });
+
   it("drops decision events with non-string required fields", () => {
     const bad = JSON.stringify({ type: "decision", ts: 123, decision: { outcome: "deny", rule_kind: "protected_path" } });
     expect(parseGuardrailDecisions(bad)).toHaveLength(0);

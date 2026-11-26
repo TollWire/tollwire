@@ -20,6 +20,8 @@ export interface Query {
   session?: string | undefined;
   /** Numeric user id as text (admin view only; the user view always filters by its own id). */
   user?: string | undefined;
+  /** Coding agent (`claude-code`, `codex`, ...). `unknown` also matches events of older versions that carry no agent. */
+  agent?: string | undefined;
 }
 
 export interface RelayMeta {
@@ -66,6 +68,27 @@ export interface SessionListing {
   findings: SourceFinding[];
 }
 
+/** Enforcement status last reported for an agent (`enforcement_status` event). */
+export interface EnforcementSummary {
+  status: string;
+  reason: string | null;
+  ts: string;
+}
+
+export interface AgentSummary {
+  agent: string;
+  events: number;
+  denies: number;
+  last_seen: string | null;
+  enforcement: EnforcementSummary | null;
+}
+
+export interface AgentListing {
+  agents: AgentSummary[];
+  truncated: boolean;
+  findings: SourceFinding[];
+}
+
 export interface VerifyResult {
   ok: boolean;
   /** All files were checked within the byte budget. */
@@ -88,6 +111,7 @@ export interface EventSource {
   readonly kind: "user" | "spool";
   list(q: Query): Listing;
   sessions(q: Query): SessionListing;
+  agents(q: Query): AgentListing;
   verify(nowMs: number): Promise<VerifyResult>;
 }
 
@@ -98,6 +122,7 @@ export type SourceConfig =
 const yieldToLoop = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
 const MAX_SEEN = 50_000;
 const BATCH = 1000;
+const MAX_AGENTS = 32;
 
 function utcDay(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10).replaceAll("-", "");
@@ -109,6 +134,20 @@ function record(value: unknown): Record<string, unknown> | null {
 
 function str(value: unknown): string | null {
   return typeof value === "string" ? value : null;
+}
+
+/** Event types that belong to a coding agent; older events of these types carry no `agent` member (shown as `unknown`). */
+const AGENT_EVENT_TYPES: ReadonlySet<string> = new Set([
+  "decision", "tool_result", "session_start", "session_end", "subagent_start", "subagent_stop", "taint_set", "taint_release", "taint_would_block",
+]);
+const AGENT_NAME = /^[a-z][a-z0-9-]{0,31}$/;
+
+/** Agent of an event: its `agent.name`, `unknown` for an agent event without one, null for events that are not about an agent. */
+export function agentOf(event: Record<string, unknown>): string | null {
+  const name = record(event.agent)?.name;
+  if (typeof name === "string" && AGENT_NAME.test(name)) return name;
+  if (typeof event.type === "string" && (AGENT_EVENT_TYPES.has(event.type) || event.type === "enforcement_status" || event.agent !== undefined)) return "unknown";
+  return null;
 }
 
 function base(path: string): string {
@@ -219,6 +258,7 @@ export class FileSource implements EventSource {
     if (q.type !== undefined && v.event.type !== q.type) return false;
     if (q.session !== undefined && record(v.event.claude)?.session_id !== q.session) return false;
     if (q.user !== undefined && String(record(v.event.user)?.id) !== q.user) return false;
+    if (q.agent !== undefined && agentOf(v.event) !== q.agent) return false;
     return true;
   }
 
@@ -306,6 +346,39 @@ export class FileSource implements EventSource {
     });
     const sessions = [...map.values()].sort((a, b) => (a.last_ts < b.last_ts ? 1 : a.last_ts > b.last_ts ? -1 : 0));
     return { sessions, truncated: r.truncated || capped, findings: r.findings };
+  }
+
+  agents(q: Query): AgentListing {
+    const map = new Map<string, AgentSummary>();
+    let capped = false;
+    const r = this.scan(q, (v) => {
+      const name = agentOf(v.event);
+      if (name === null) return true;
+      let a = map.get(name);
+      if (a === undefined) {
+        if (map.size >= MAX_AGENTS) {
+          capped = true;
+          return true;
+        }
+        a = { agent: name, events: 0, denies: 0, last_seen: null, enforcement: null };
+        map.set(name, a);
+      }
+      const ts = v.event.ts as string;
+      if (v.event.type === "enforcement_status") {
+        // Newest first: the first one seen is the latest report.
+        const data = record(v.event.data);
+        if (a.enforcement === null || Date.parse(ts) > Date.parse(a.enforcement.ts)) {
+          a.enforcement = { status: str(data?.status) ?? "unknown", reason: str(data?.reason), ts };
+        }
+        return true;
+      }
+      a.events += 1;
+      if (record(v.event.decision)?.outcome === "deny") a.denies += 1;
+      if (a.last_seen === null || Date.parse(ts) > Date.parse(a.last_seen)) a.last_seen = ts;
+      return true;
+    });
+    const agents = [...map.values()].sort((a, b) => (a.agent < b.agent ? -1 : a.agent > b.agent ? 1 : 0));
+    return { agents, truncated: r.truncated || capped, findings: r.findings };
   }
 
   async verify(nowMs: number): Promise<VerifyResult> {

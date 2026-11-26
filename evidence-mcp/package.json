@@ -1,6 +1,6 @@
 {
   "name": "@tollwire/evidence-mcp",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "mcpName": "io.github.TollWire/evidence-mcp",
   "description": "MCP server that records agent changes, scans and approvals as a tamper-evident hash chain with a draft ISO 27001/NIS2 control mapping.",
   "license": "PolyForm-Noncommercial-1.0.0",

@@ -25,6 +25,7 @@
 // boundary" — the same position as TollWire's SECURITY.md.
 import { runHook, type HookDeps } from "../hook.js";
 import { resolveProjectDir } from "./projectDir.js";
+import { claudeToolName } from "./translate.js";
 
 export interface AdapterOutput {
   code: number;
@@ -119,7 +120,9 @@ function denyForPatch(
 }
 
 /** Pure decision: Codex stdin JSON -> adapter output. Never throws for input problems (fails closed to a deny). */
-export function codexDecision(stdin: string, env: NodeJS.ProcessEnv, cwd: string, deps: HookDeps = {}): AdapterOutput {
+export function codexDecision(stdin: string, env: NodeJS.ProcessEnv, cwd: string, rawDeps: HookDeps = {}): AdapterOutput {
+  // The agent name comes from this adapter, never from the caller or from the input.
+  const deps: HookDeps = { ...rawDeps, agent: "codex" };
   let object: Record<string, unknown>;
   try {
     object = asRecord(JSON.parse(stdin));
@@ -144,8 +147,15 @@ export function codexDecision(stdin: string, env: NodeJS.ProcessEnv, cwd: string
     if (denied !== null) return denied;
   }
 
-  // Everything else: pass through unchanged (parity with Claude Code).
-  const claude = { ...object, hook_event_name: "PreToolUse" };
+  // Everything else: pass through (parity with Claude Code), with the tool name normalized case-insensitively to its
+  // Claude name (`WRITE` -> `Write`), so the engine checks it; an unknown write-class name fails closed (shared
+  // write-class detection, see translate.ts).
+  let claude: Record<string, unknown> = { ...object, hook_event_name: "PreToolUse" };
+  if (toolName !== undefined) {
+    const checked = claudeToolName(toolName, "all");
+    if (checked.kind === "deny") return deny(checked.reason);
+    claude = { ...claude, tool_name: checked.name };
+  }
   const result = runHook(JSON.stringify(claude), env, projectDir, deps);
   return result.code === 0 ? allow() : deny(result.message ?? "TollWire guardrail: blocked.");
 }

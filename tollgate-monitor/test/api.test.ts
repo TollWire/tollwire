@@ -161,6 +161,7 @@ describe("sessions and findings are masked like events", () => {
       kind: "user",
       list: () => ({ events: [], hasMore: false, truncated: false, findings: [{ kind: "x\u001b", file: "f\u202e", detail: "d\u0000" }] }),
       sessions: () => ({ sessions: [], truncated: false, findings: [{ kind: "x\u001b", file: "f\u202e", detail: "d\u0000" }] }),
+      agents: () => ({ agents: [], truncated: false, findings: [] }),
       verify: () => Promise.resolve({ ok: false, complete: true, files: 1, events: 0, chains: 0, findings: [{ kind: "hash_mismatch", file: "f\u001b", line: 1, detail: "d\u2028" }], more_findings: 0, read_findings: [{ kind: "k", file: "f\u202e", detail: "d\u0085" }], embedded: null, checked_at: "t" }),
     };
     const m = await startMonitor(hostile);
@@ -227,6 +228,7 @@ describe("chain verification", () => {
       kind: "user",
       list: () => ({ events: [], hasMore: false, truncated: false, findings: [] }),
       sessions: () => ({ sessions: [], truncated: false, findings: [] }),
+      agents: () => ({ agents: [], truncated: false, findings: [] }),
       verify: () => {
         calls += 1;
         return new Promise((resolve) => {

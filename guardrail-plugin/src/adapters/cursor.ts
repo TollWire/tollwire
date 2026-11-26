@@ -50,7 +50,9 @@ function deny(reason: string): AdapterOutput {
 }
 
 /** Pure decision: Cursor stdin JSON -> adapter output. Never throws for input problems (fails closed to a deny). */
-export function cursorDecision(stdin: string, env: NodeJS.ProcessEnv, cwd: string, deps: HookDeps = {}): AdapterOutput {
+export function cursorDecision(stdin: string, env: NodeJS.ProcessEnv, cwd: string, rawDeps: HookDeps = {}): AdapterOutput {
+  // The agent name comes from this adapter, never from the caller or from the input.
+  const deps: HookDeps = { ...rawDeps, agent: "cursor" };
   let object: Record<string, unknown>;
   try {
     object = asRecord(JSON.parse(stdin));

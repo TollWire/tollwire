@@ -15,6 +15,8 @@ export const EVENT_TYPES = [
   "log_error", "policy_error", "policy_override_ignored", "logging_disabled", "logging_enabled", "tool_result",
   // Session taint: the session became tainted, a human lifted it, a block in mode `observe` (not enforced).
   "taint_set", "taint_release", "taint_would_block",
+  // Result of the static enforcement check of one coding agent (`tollgate-guard-status --record`).
+  "enforcement_status",
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -25,6 +27,14 @@ export const RULE_KINDS = [
   "credential_read",
 ] as const;
 export type RuleKind = (typeof RULE_KINDS)[number];
+
+/** Coding agents the engine has an adapter for. `unknown`: the writer could not name the agent. */
+export const AGENT_NAMES = ["claude-code", "codex", "copilot", "grok", "cursor", "unknown"] as const;
+export type AgentName = (typeof AGENT_NAMES)[number];
+
+/** Enforcement status of one agent on this host (see docs/events-v1.md). */
+export const ENFORCEMENT_STATUSES = ["ENFORCED", "DEGRADED", "UNPROTECTED", "NOT_INSTALLED"] as const;
+export type EnforcementStatus = (typeof ENFORCEMENT_STATUSES)[number];
 
 export type Outcome = "allow" | "deny" | "ask" | "observe";
 
@@ -74,6 +84,8 @@ export interface Draft {
   host: { name: string; os: string };
   user: { name: string; id: string };
   claude?: ClaudeFields;
+  /** Agent that triggered the event. Set by the adapter of the agent, never read from stdin or the environment. */
+  agent?: { name: AgentName };
   tool?: ToolFields;
   redactions?: number;
   decision?: DecisionFields;

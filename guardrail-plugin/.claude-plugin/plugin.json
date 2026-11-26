@@ -1,6 +1,6 @@
 {
   "name": "tollwire-guardrail",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Blocks recognized writes to protected paths, dangerous shell commands and non-allowlisted dependencies; exposes the same checks as MCP tools.",
   "author": { "name": "TollWire", "url": "https://github.com/TollWire" },
   "homepage": "https://github.com/TollWire/tollwire/tree/main/guardrail-plugin#readme",

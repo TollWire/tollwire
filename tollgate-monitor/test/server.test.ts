@@ -206,6 +206,9 @@ describe("answers", () => {
       sessions() {
         throw new Error("/secret/path");
       },
+      agents() {
+        throw new Error("/secret/path");
+      },
       verify() {
         return Promise.reject(new Error("/secret/path at /x.js:1"));
       },

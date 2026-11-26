@@ -18,7 +18,7 @@ import { EventLogger, type DecisionRecord, type LogContext, type LogResult, type
 import { observedTool } from "./events/observe.js";
 import { systemRuntime, type Runtime } from "./events/runtime.js";
 import { ENTERPRISE_DEFAULTS } from "./events/settings.js";
-import { INVALID, type ClaudeFields, type DecisionFields, type PolicyFields, type RuleKind } from "./events/types.js";
+import { INVALID, type AgentName, type ClaudeFields, type DecisionFields, type PolicyFields, type RuleKind } from "./events/types.js";
 import type { TaintSource } from "./taint.js";
 import { taintMark, taintPost, taintPre, taintSessionStart, taintWouldBlock, type TaintContext, type TaintDeny, type TaintDeps } from "./taintHook.js";
 import { canonicalJson, sha256Hex } from "./vendor/hashchain.js";
@@ -52,6 +52,13 @@ export interface HookDeps {
   locks?: { path?: string; now?: () => number; uid?: number | null };
   /** Session taint: state and release directories (tests); production uses the defaults of `taintHook.ts`. */
   taint?: TaintDeps;
+  /**
+   * The agent this hook call belongs to. Each adapter sets it from its own code (never from stdin or an environment variable
+   * the agent could set); it goes into the `agent` member of the decision, result, session and taint events.
+   */
+  agent?: AgentName;
+  /** Evaluate without writing any log event (self-test of `tollgate-guard-status` only). */
+  dryRun?: boolean;
 }
 
 const EventSchema = z.object({
@@ -145,6 +152,8 @@ export function loggerFor(rt: Runtime, env: NodeJS.ProcessEnv, resolution: Resol
     enterprise,
     policy: policyFields(resolution, signal, lockLayer),
     findings: resolution.ok ? resolution.findings : [],
+    ...(deps.agent !== undefined ? { agent: deps.agent } : {}),
+    ...(deps.dryRun === true ? { dryRun: true } : {}),
   });
 }
 
@@ -579,5 +588,5 @@ export async function runMain(
 }
 
 if (isEntryPoint(import.meta.url)) {
-  process.exit(await runMain(readStdin, process.env, process.cwd(), (text) => process.stderr.write(text)));
+  process.exit(await runMain(readStdin, process.env, process.cwd(), (text) => process.stderr.write(text), { agent: "claude-code" }));
 }

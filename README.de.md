@@ -14,7 +14,7 @@ TollWire ergänzt KI-Coding-Agenten um eine Kontrollschicht: Es prüft Schreibzu
 Englische Hauptfassung: [README.md](README.md)
 
 > [!IMPORTANT]
-> **Release-Stand: Version 0.1.6.** Schnittstellen können sich vor 1.0
+> **Release-Stand: Version 0.1.7.** Schnittstellen können sich vor 1.0
 > inkompatibel ändern.
 >
 > **Lizenz:** quelloffen einsehbar, aber kein Open Source: [PolyForm Noncommercial License 1.0.0](LICENSE). Nur nicht-kommerzielle Nutzung; kommerzielle Nutzung braucht vorherige schriftliche Zustimmung (Textform, z. B. E-Mail). Siehe [Lizenz](#lizenz) und [LEGAL.md](LEGAL.md).
@@ -250,6 +250,11 @@ wie der Claude-Code-Hook weiter; es entscheidet dieselbe Policy.
 > ebenso, außer der Hook ist mit `"failClosed": true` eingetragen (siehe Anleitung). Die [Grenzen](#grenzen) gelten unverändert.
 
 Einrichtung je Agent (englisch): [guardrail-plugin/docs/multi-agent.md](guardrail-plugin/docs/multi-agent.md).
+
+Seit Version 0.1.7 nennt jede protokollierte Entscheidung den Agenten, der sie ausgelöst hat, und `tollgate-guard-status`
+meldet je Agent, ob der Hook eingetragen ist und wie er sich bei einem Fehler verhält: `ENFORCED`, `DEGRADED` (der Agent
+lässt einen Aufruf durch, wenn der Hook in einen Timeout läuft oder fehlschlägt), `UNPROTECTED` oder `NOT_INSTALLED`. Der
+Status ist eine Selbstauskunft dieses Rechners, kein Beweis gegenüber jemandem, der die Konfiguration ändern kann.
 
 ## Voraussetzungen
 

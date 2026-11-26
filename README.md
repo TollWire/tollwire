@@ -14,7 +14,7 @@ TollWire adds a policy enforcement layer to AI coding agents: it checks file wri
 German version: [README.de.md](README.de.md)
 
 > [!IMPORTANT]
-> **Release status: version 0.1.6.** Interfaces can change incompatibly before 1.0.
+> **Release status: version 0.1.7.** Interfaces can change incompatibly before 1.0.
 >
 > **License:** source-available, not open source: [PolyForm Noncommercial License 1.0.0](LICENSE). Noncommercial use only; commercial use requires prior permission in writing (text form, e.g. e-mail). See [License](#license) and [LEGAL.md](LEGAL.md).
 
@@ -246,6 +246,11 @@ Code hook, so the same policy decides.
 > The [Limits](#limits) apply unchanged.
 
 Setup per agent: [guardrail-plugin/docs/multi-agent.md](guardrail-plugin/docs/multi-agent.md).
+
+Since version 0.1.7 every logged decision names the agent that triggered it, and `tollgate-guard-status` reports per agent
+whether the hook is registered and how it behaves when it fails: `ENFORCED`, `DEGRADED` (the agent lets a call through when
+the hook times out or fails), `UNPROTECTED` or `NOT_INSTALLED`. The status is what this machine reports about itself; it is
+not proof against someone who can change the configuration.
 
 ## Requirements
 

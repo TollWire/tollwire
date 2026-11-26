@@ -47,7 +47,7 @@ export const HOME_PROTECTED_PATHS: readonly string[] = [
   ".bash_aliases", ".aws/", ".kube/", ".config/systemd/", ".config/autostart/", ".config/fish/", ".local/bin/", "bin/",
   ".vimrc", ".inputrc",
   // macOS persistence and agent configuration: launch agents and Claude Desktop. Not all of `.config/`.
-  "Library/LaunchAgents/", "Library/Application Support/Claude/",
+  "Library/LaunchAgents/", "Library/Application Support/Claude/", "Library/Keychains/",
 ];
 
 /** Commands longer than this (UTF-8 bytes) are blocked: bounds the run time of the checks. */

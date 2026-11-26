@@ -30,6 +30,7 @@ const HTML = `<!doctype html>
 <section id="view" hidden>
 <div class="bar">
 <label for="f-type">Type</label><input id="f-type" type="text" maxlength="40" placeholder="decision">
+<label for="f-agent">Agent</label><input id="f-agent" type="text" maxlength="32" placeholder="codex" spellcheck="false">
 <label for="f-session">Session</label><input id="f-session" type="text" maxlength="128">
 <label for="f-limit">Limit</label><input id="f-limit" type="number" min="1" max="1000" value="100">
 <span id="f-user-wrap" hidden><label for="f-user">User id</label><input id="f-user" type="text" maxlength="10"></span>
@@ -57,6 +58,8 @@ const HTML = `<!doctype html>
 </div>
 <p id="a-result" class="notice"></p>
 </section>
+<h2>Agents</h2>
+<table id="agents"><thead></thead><tbody></tbody></table>
 <h2>Sessions</h2>
 <table id="sessions"><thead></thead><tbody></tbody></table>
 <h2>Events</h2>
@@ -81,7 +84,7 @@ table{border-collapse:collapse;width:100%;background:#fff}
 th,td{border:1px solid #d0d7de;padding:2px 6px;text-align:left;vertical-align:top;word-break:break-word}
 th{background:#eaeef2}
 .error{color:#cf222e}.notice{color:#9a6700}
-.deny{background:#ffebe9}.ok{color:#1a7f37}.bad{color:#cf222e;font-weight:600}
+.deny{background:#ffebe9}.degraded{background:#fff8c5}.enforced{color:#1a7f37}.unprotected{color:#cf222e;font-weight:600}.ok{color:#1a7f37}.bad{color:#cf222e;font-weight:600}
 .result{margin:8px 0}
 select{padding:3px 6px}
 `;
@@ -126,7 +129,7 @@ const JS = String.raw`"use strict";
     var e = item.event;
     var row = el("tr", null, get(e, ["decision", "outcome"]) === "deny" ? "deny" : "");
     var cells = [
-      e.ts, e.type, get(e, ["claude", "session_id"]), get(e, ["tool", "name"]),
+      e.ts, e.type, get(e, ["agent", "name"]), get(e, ["claude", "session_id"]), get(e, ["tool", "name"]),
       get(e, ["decision", "outcome"]), get(e, ["decision", "rule_kind"]), get(e, ["decision", "reason"]),
       (get(e, ["tool", "paths"]) || []).join(" "), (get(e, ["tool", "command"]) || "")
     ];
@@ -137,9 +140,26 @@ const JS = String.raw`"use strict";
     cells.forEach(function (c) { row.appendChild(el("td", c === undefined || c === null ? "" : c)); });
     return row;
   }
+  function agentRow(a) {
+    var row = el("tr");
+    var enf = a.enforcement;
+    var cls = enf ? String(enf.status).toLowerCase() : "";
+    if (cls !== "enforced" && cls !== "degraded" && cls !== "unprotected") cls = "";
+    [a.agent, a.events, a.denies, a.last_seen || ""].forEach(function (c) { row.appendChild(el("td", c)); });
+    row.appendChild(el("td", enf ? enf.status + (enf.reason ? " (" + enf.reason + ")" : "") + " " + enf.ts : "not reported", cls));
+    return row;
+  }
+  function renderAgents(agents) {
+    var table = $("agents");
+    head(table, ["Agent", "Events", "Denied", "Last seen", "Enforcement status"]);
+    var body = table.tBodies[0];
+    clear(body);
+    agents.agents.forEach(function (a) { body.appendChild(agentRow(a)); });
+    if (!agents.agents.length) { var empty = el("tr"); empty.appendChild(el("td", "no agent events in this period")); body.appendChild(empty); }
+  }
   function render(listing, sessions) {
     var admin = state.mode === "admin";
-    var cols = ["Time", "Type", "Session", "Tool", "Outcome", "Rule", "Reason", "Paths", "Command"];
+    var cols = ["Time", "Type", "Agent", "Session", "Tool", "Outcome", "Rule", "Reason", "Paths", "Command"];
     if (admin) cols = cols.concat(["User", "Host", "Relay"]);
     var table = $("events");
     head(table, cols);
@@ -163,20 +183,25 @@ const JS = String.raw`"use strict";
   }
   function query(withLimit) {
     var p = [];
-    var t = $("f-type").value.trim(), s = $("f-session").value.trim(), u = $("f-user").value.trim();
+    var t = $("f-type").value.trim(), s = $("f-session").value.trim(), u = $("f-user").value.trim(), g = $("f-agent").value.trim();
     var l = parseInt($("f-limit").value, 10);
     if (t) p.push("type=" + encodeURIComponent(t));
     if (s) p.push("session=" + encodeURIComponent(s));
+    if (g) p.push("agent=" + encodeURIComponent(g));
     if (u && state.mode === "admin") p.push("user=" + encodeURIComponent(u));
     if (withLimit && l > 0) p.push("limit=" + l);
     return p.length ? "?" + p.join("&") : "";
   }
+  function agentQuery() {
+    var u = $("f-user").value.trim();
+    return u && state.mode === "admin" ? "?user=" + encodeURIComponent(u) : "";
+  }
   function reload() {
-    Promise.all([api("/api/v1/events" + query(true)), api("/api/v1/sessions" + query(false))]).then(function (rs) {
-      if (rs[0].status === 401 || rs[1].status === 401) { showLogin("The token is invalid or expired."); return null; }
-      if (!rs[0].ok || !rs[1].ok) { $("notice").textContent = "Request failed (" + rs[0].status + "/" + rs[1].status + ")."; return null; }
-      return Promise.all([rs[0].json(), rs[1].json()]);
-    }).then(function (data) { if (data) render(data[0], data[1]); }).catch(function () { $("notice").textContent = "Request failed."; });
+    Promise.all([api("/api/v1/events" + query(true)), api("/api/v1/sessions" + query(false)), api("/api/v1/agents" + agentQuery())]).then(function (rs) {
+      if (rs[0].status === 401 || rs[1].status === 401 || rs[2].status === 401) { showLogin("The token is invalid or expired."); return null; }
+      if (!rs[0].ok || !rs[1].ok || !rs[2].ok) { $("notice").textContent = "Request failed (" + rs[0].status + "/" + rs[1].status + "/" + rs[2].status + ")."; return null; }
+      return Promise.all([rs[0].json(), rs[1].json(), rs[2].json()]);
+    }).then(function (data) { if (data) { render(data[0], data[1]); renderAgents(data[2]); } }).catch(function () { $("notice").textContent = "Request failed."; });
   }
   function showLogin(message) {
     state.token = "";

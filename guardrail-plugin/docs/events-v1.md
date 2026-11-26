@@ -18,6 +18,7 @@ the relay, sender, heartbeat and monitor are reserved names only and are not pro
 | `type` | string | see "Event types" |
 | `host.name`, `host.os` | string | host name; `linux`, `macos`, `windows` or the raw platform name |
 | `user.name`, `user.id` | string | operating-system user (`getpwuid`); `id` is the numeric uid (`"-1"` on Windows) |
+| `agent.name` | string | coding agent that triggered the event: `claude-code`, `codex`, `copilot`, `grok`, `cursor` or `unknown`. Optional and additive: set by the adapter of the agent in code (never from the hook input or the environment), present in `decision`, `tool_result`, `session_*`, `subagent_*`, `taint_*`, `suppressed` and `enforcement_status`. Events written by older versions have no `agent`; readers treat that as `unknown`. The member is part of the hashed content of the events that carry it |
 | `claude.session_id` | string | `^[A-Za-z0-9_.:-]{1,128}$`, else `"<invalid>"` |
 | `claude.tool_use_id` | string or null | same rule |
 | `claude.agent_id`, `claude.agent_type` | string or null | at most 128 characters, else `"<invalid>"` |
@@ -71,8 +72,25 @@ command text is logged only redacted and truncated (`commandDetail = redacted`),
 | `taint_set` | session taint: the session became tainted (a source was allowed or finished, or the taint state was missing or invalid) | `source_kind` (`tool`, `bash_network`, `bash_wrapper` (a wrapper, `sh -c`, dynamic program or git command line whose command is not analyzed), `read_outside_project`, `state_missing`, `state_invalid`, `inherited`), `source_name` (tool or program name, or the state problem), `previous` (`clean`, `state_missing`, `state_invalid`, `key_missing`), `epoch`, `taint_seq`, `invalid_sha256` (SHA-256 of a manipulated state file, else absent or null), `mode`, `human_session`. Never a URL, path, argument or content |
 | `taint_release` | a human lifted the taint | `via` (`user`: `tollgate-taint release` in a terminal; `admin`: root-owned release file consumed by the hook), `release_id`, `epoch`, `taint_seq`, `by_uid` (admin only: `SUDO_UID` of the administrator), `mode`, `human_session` |
 | `taint_would_block` | mode `observe`: a call that `enforce` would have blocked | `rule_id`, `category` (`network`, `git_push`, `secrets`, `release_cli`, `nested_agent`), `tool`, `mode`, `human_session` |
+| `enforcement_status` | `tollgate-guard-status --record`: one event per agent (see below) | `status` (`ENFORCED`, `DEGRADED`, `UNPROTECTED`, `NOT_INSTALLED`), `reason` (code), `hook_registered`, `target_exists`, `fail_closed` (boolean or null), `self_test` (`pass`, `fail`, `skipped`), `config_source` (relative: `~/...`, `project:...`, `managed:...`, or null), `human_session`. `agent.name` names the agent the status is about. All members are flat scalars |
 
 All `taint_*` data fields are flat scalars (no arrays of objects), so that SIEM decoders that cannot read arrays of objects (Wazuh) match them directly. The block itself is a `decision` event with `rule_kind` `taint`.
+
+### Enforcement status (`enforcement_status`)
+
+`tollgate-guard-status` checks the documented hook configuration locations of each agent and runs one known deny case through the
+adapter in-process (no log entry, no network). Result per agent:
+
+| `status` | Meaning |
+|---|---|
+| `ENFORCED` | hook registered, target exists, self-test passes, and the agent denies the call when the hook fails |
+| `DEGRADED` | hook registered and working, but the agent continues when the hook times out or crashes (fail-open): Copilot, Grok, Cursor without `failClosed: true` |
+| `UNPROTECTED` | agent present but hook not registered, configuration unreadable, target missing, or self-test failed |
+| `NOT_INSTALLED` | no trace of the agent on this host |
+
+The status is a statement of the host about itself: a user with root rights can forge configuration, self-test and log. It finds
+misconfiguration and forgotten agents, not an attacker with host rights. Exit code of the tool: 0 without any `UNPROTECTED` agent,
+1 otherwise, 2 for a usage error. It never blocks a tool call.
 
 ### `admin_action` (admin locks; written by `tollgate-control`, not by the hook)
 

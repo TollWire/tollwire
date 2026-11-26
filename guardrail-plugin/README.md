@@ -17,7 +17,7 @@ Issues are welcome; pull requests from third parties are not accepted, see [CONT
 - **Shell commands:** nested shell strings (`bash -c`, `csh -c`, `trap`, `alias`, functions) are checked recursively. For `csh`/`tcsh` the forms `>!`, `>>!`, `>&!` and `>>&` are not analyzed and therefore blocked (fail closed). Commands are blocked when a target is only known at runtime (`$VAR`, `$(...)`, `xargs`), when a command name is dynamic, when code comes from a pipe or a file, or when the command is an editor.
 - **Inline code:** a list-based heuristic looks for write or process APIs in inline code (`python -c`, `node -e`, here-documents).
 - **Git configuration that runs commands** (`core.fsmonitor`, `alias.*`, `GIT_SSH_COMMAND`) and **home-directory configuration** (shell profiles, Git and SSH configuration, credentials, autostart and user units, `~/.local/bin`) are blocked for writes, for Bash and the write tools; `~`, `$HOME` and `${HOME}` at the start of a write tool path stand for the home directory. Protected are the files below `HOME` and below the home directory of the user database, if the two differ.
-- **Credential stores in the home directory** (`.ssh`, `.aws`, `.gnupg`, `.kube`, `.azure`, `.netrc`, `.npmrc`, `.pypirc`, `.git-credentials`, `.docker/config.json`, `.config/gh`, `.config/gcloud`) are blocked for reads (rule kind `credential_read`), also in a human session: for the read tools (`Read`, `NotebookRead`, `LS`, `Grep`, `Glob`; `Grep` also over a home directory or above it) and for every word of a Bash command, as a path resolved against `HOME` and the home directory of the user database (absolute, `~`, `$HOME`, relative, through a symlink or a hard link), plus `/home/<name>`, `/Users/<name>` and `/root`. A spelling that names a store but cannot be resolved (variables, `~user`, unknown home) is blocked. The text rule in the policy stays as a second layer.
+- **Credential stores in the home directory** (`.ssh`, `.aws`, `.gnupg`, `.kube`, `.azure`, `.netrc`, `.npmrc`, `.pypirc`, `.git-credentials`, `.docker/config.json`, `.config/gh`, `.config/gcloud`, `Library/Keychains` on macOS) are blocked for reads (rule kind `credential_read`), also in a human session: for the read tools (`Read`, `NotebookRead`, `LS`, `Grep`, `Glob`; `Grep` also over a home directory or above it) and for every word of a Bash command, as a path resolved against `HOME` and the home directory of the user database (absolute, `~`, `$HOME`, relative, through a symlink or a hard link), plus `/home/<name>`, `/Users/<name>` and `/root`. A spelling that names a store but cannot be resolved (variables, `~user`, unknown home) is blocked. The text rule in the policy stays as a second layer.
 - **Dependencies:** dependency changes are checked against the allowlist in the policy.
 - **Size:** shell commands over 32 KiB are blocked, also in a human-operated session.
 - `git apply`, `git am` and `patch` are allowed only with `--check` or `--dry-run`.
@@ -129,6 +129,16 @@ The project directory is the directory from which Claude Code was started.
 
 `TOLLGATE_HUMAN_SESSION=1` allows changes to protected paths. It is meant for sessions that a person operates. Do not set it for unattended or CI runs.
 
+## macOS (stand-alone use)
+
+The plugin is written to run on macOS (Node 22.12 or newer, `./install.sh` from a checkout, or the marketplace). The automated tests run on Linux with the platform as a parameter; **a run on real Mac hardware has not been verified yet**, so treat macOS as supported by design and not yet confirmed.
+
+- **Node:** the hook starts `node` from the `PATH` that Claude Code passes on. If Claude Code is started from the Dock or Finder, that `PATH` may lack Homebrew (`/opt/homebrew/bin`) or a version manager; the checked tools are then blocked with `TollWire guardrail: hook did not run` (fail closed). Start Claude Code from a terminal in which `command -v node` finds Node 22.12 or newer, or install Node in a place on the default `PATH`.
+- **Paths:** comparisons ignore case and Unicode normalization form (APFS). `~/Library/LaunchAgents/`, `~/Library/Application Support/Claude/` and `~/Library/Keychains/` are protected; the keychain folder is also locked for reads. The temporary directory `$TMPDIR` below `/var/folders/<xx>/<id>/T/` is accepted as a temporary directory.
+- **Decision log:** `~/Library/Logs/TollGate/`.
+- **Timeout:** no GNU `timeout`; the built-in watchdog applies (see "Hook and fail-closed behavior").
+- **Not covered:** programs that read the keychain by themselves (`security`, `osascript`) are not recognized by a rule; use a container or virtual machine for untrusted agents.
+
 ## Limits
 
 - This is a guardrail, not a sandbox, and it does not replace one. The rules are a block list: a command that no rule recognizes is allowed. The security boundary is a review on the server (protected paths, code owners, branch rules) and isolation at the operating-system level (container or virtual machine, read-only mounts, minimal rights, restricted network).
@@ -136,8 +146,20 @@ The project directory is the directory from which Claude Code was started.
 - The project boundary for Bash covers only the write targets the check recognizes (redirections and known write commands). Programs that write on their own (scripts, build tools, `npm install -g`, package managers, unknown programs) can still write outside the project. Running as another user is caught only where the name is visible: `$(which sudo)`, a variable or an alias that holds the name is not recognized; `ssh`, `docker`/`podman` and `run0` are not modeled.
 - The hook takes effect only if Claude Code loads the plugin or the project settings.
 - Home directories: `~user/` (another user's home) is not expanded in write tool paths; such a path is taken as a name inside the project. The protected home files are recognized below `HOME` and the home directory of the user database only, not below other users' homes.
-- Without GNU `timeout`, the 25-second limit does not apply; only the 30-second limit of Claude Code does.
+- Without GNU `timeout` (the macOS default), the wrapper starts the hook through a built-in watchdog (`dist/hookCliPosix.js`) that ends it after 25 seconds; for the checked tools that is a block.
 - Credential read lock: the read tools come through the manifest entry for unchecked tools, which lets a call through if the hook process itself fails outside enterprise mode (a block from the hook is honored). Bash is checked word by word: a program that opens a store on its own (a script, a tool with a built-in default path such as `ssh` or `aws`) is not recognized, and `Glob` without `dotglob` semantics may still list names (not contents) of files in a store through `**`.
+
+## Windows (experimental, not verified on real hardware)
+
+Windows is not a supported platform yet. What exists, and what is unknown:
+
+- **Manifests:** `hooks/hooks.json` is the POSIX shell form (it uses `/usr/bin/env`, `uname` and `timeout`). `hooks/hooks.windows.json` is the `cmd.exe` form: it starts `C:\Program Files\nodejs\node.exe` with `dist/hookCliWin.js` (hard time limit through a watchdog instead of `timeout`) and turns every exit code other than 0 into a block for the checked tools. Claude Code loads only `hooks/hooks.json`; the plugin does not choose a manifest by platform.
+- **Unknown:** which shell Claude Code uses to start hook commands on Windows (cmd, Git Bash or PowerShell). Until that is measured, it is not established that either manifest takes effect. Do not rely on the guardrail on Windows before you have checked, with a harmless blocked write, that the hook runs and that a block arrives.
+- **Node location:** the Windows manifest expects Node at `C:\Program Files\nodejs\node.exe`. With Node elsewhere (nvm-windows, Scoop, a per-user install) the hook for checked tools blocks every call (fail closed) and the one for unchecked tools allows.
+- **Decision log:** `%LOCALAPPDATA%\TollGate\events\`, one file per UTC day (see "Decision log").
+- **Enterprise mode:** not available on Windows. With an enterprise signal the hook fails closed (`policy_error`) because the access rights of the policy cannot be verified yet, and no log is written to the enterprise location. `tollgate-events verify` does not verify Windows enterprise event files yet.
+- **Tests:** the test suite has been run on Linux. It has not been run on Windows; some tests assume POSIX behaviour (file modes, FIFOs) and may fail there. Reports from Windows are welcome as issues.
+- **Possible gap:** if your Claude Code version offers a separate PowerShell tool, it is not in the matcher of the manifests (outside enterprise mode it is only recorded, not checked). Whether such a tool exists in your version is not verified here.
 
 ## Components
 

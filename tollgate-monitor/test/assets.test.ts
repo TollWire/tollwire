@@ -41,3 +41,20 @@ describe("visible name", () => {
     expect(html).not.toContain("<code>sudo tollgate-control");
   });
 });
+
+describe("agent overview and filter in the page", () => {
+  const html = ASSETS["/"]?.body ?? "";
+  const js = ASSETS["/app.js"]?.body ?? "";
+
+  it("has the agent filter, the agents table and no external resource", () => {
+    expect(html).toContain('id="f-agent"');
+    expect(html).toContain('id="agents"');
+    expect(html).not.toMatch(/(?:https?:)\/\//);
+  });
+
+  it("asks for the agents endpoint and passes the filter on, writing text only", () => {
+    expect(js).toContain("/api/v1/agents");
+    expect(js).toContain('"agent=" + encodeURIComponent(g)');
+    expect(js).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML/);
+  });
+});

@@ -19,6 +19,7 @@ The package ships these binaries alongside `tollgate-guard` (Claude Code):
 | GitHub Copilot CLI   | `tollgate-guard-copilot`  | `dist/copilotHookCli.js` |
 | xAI Grok Build (CLI) | `tollgate-guard-grok`     | `dist/grokHookCli.js`    |
 | Cursor Agent         | `tollgate-guard-cursor`   | `dist/cursorHookCli.js`  |
+| Status check (all)   | `tollgate-guard-status`   | `dist/statusCli.js`      |
 
 Each reads the agent's `PreToolUse` payload on stdin and reuses the full engine (policy, protected paths,
 blocked commands, dependency allowlist, credential-read lock, admin locks, session taint) with the same
@@ -144,16 +145,58 @@ actually evaluated, so the guardrail decides allow/deny for `Shell|Write|Read|Gr
 tool it did not check. (If you prefer Cursor's own permission prompt to remain for allowed calls, drop `failClosed`
 and accept that a hook crash then fails open.)
 
+## Unknown tools
+
+A tool name an adapter cannot map to a checked tool is classified by one shared name heuristic used by all four
+adapters. The name is split into words at snake_case, kebab-case and camelCase boundaries; it is **write-class** when a
+word is one of `write`, `edit`, `create`, `patch`, `replace`, `insert`, `delete`, `remove`, `rename`, `move`, `mv`,
+`copy`, `cp`, `append`, `save`, `put`, `store`, `overwrite`, `truncate`, `upload`, `dump`, `export`, `sync`, `output`,
+`apply`, `modify`, `update`, `set`, `mkdir`, `rm`, `touch`, `chmod`, `chown`, `link`, `unlink` (keywords of four or
+more letters also match inside compounds such as `applypatch`). Read names such as `view`, `read_file`, `grep`,
+`list_dir`, `search` or `fetch` are not write-class.
+
+- A write-class unknown tool is **denied** (fail closed) by every adapter: Grok, Cursor (deny, not `ask`), Copilot and
+  Codex. Codex and Copilot first normalize a case variant of a Claude tool name (Codex: `WRITE` → `Write`, `bash` →
+  `Bash`; Copilot: the shell only), so the engine checks it instead of treating it as unknown.
+- Claude-native coordination tools (`TodoWrite`, `TaskCreate`, `TaskUpdate`, ...), Codex `update_plan` and MCP tools
+  named `mcp__*` (Codex, Copilot) are passed to the engine as before, where the unchecked-tool policy applies.
+- Any other unknown tool is passed to the engine under its own name (unchecked; allowed in a standalone install).
+
+**Limit:** this is a name heuristic. A write tool with a completely neutral name (no keyword) is not recognized and
+is treated as unchecked. In enterprise mode keep `tools.unchecked` at `deny` (the default) so every unknown tool needs an
+explicit allowlist entry. Keep the hook matchers in the examples above narrow; they are a second line, not a replacement.
+
 ## Gemini CLI — not shipped (deprecated)
 
 No Gemini CLI adapter is shipped. Google's own docs state the Gemini CLI was **replaced by the Antigravity CLI on
 2026-06-18**, and its edit/write tool argument field names are not documented, so a write-blocking adapter could not
 be built safely. Targeting Antigravity instead is a separate decision (its hook contract needs its own research).
 
+## Which agent is protected? `tollgate-guard-status`
+
+Every event carries `agent.name` (see `events-v1.md`), so the log, the monitor and a SIEM can tell the agents apart. To see which
+agents are actually guarded on a host, run:
+
+```
+tollgate-guard-status [--json] [--record] [--project /abs/path/to/repo]
+```
+
+It reads the hook configuration at the locations documented above (Claude Code plugin or settings, `~/.codex/hooks.json`,
+`~/.copilot/hooks/*.json`, `~/.grok/hooks/*.json`, `~/.cursor/hooks.json`; with `--project` also the project locations), checks that
+the registered hook points to an existing target, that Cursor has `failClosed: true`, and runs a known deny case through the
+adapter in-process. Result per agent: `ENFORCED`, `DEGRADED`, `UNPROTECTED` or `NOT_INSTALLED`.
+
+- Copilot and Grok are fail-open on a hook timeout or crash, so they stay `DEGRADED` even when everything is configured correctly.
+  Cursor is `DEGRADED` without `failClosed: true`.
+- `--record` writes one `enforcement_status` event per agent into the decision log (run it periodically, for example daily).
+- The status is the host's statement about itself, not proof: it cannot detect an attacker with root rights. The self-test shows
+  that the engine in this package denies through the adapter; it does not start the registered target. The matcher of a hook
+  entry and the precedence between configuration scopes are not evaluated.
+
 ## Validation status
 
 The adapters' decision logic is proven by unit tests (`test/codexAdapter.test.ts`, `test/copilotAdapter.test.ts`,
-`test/grokAdapter.test.ts`, `test/cursorAdapter.test.ts`, `test/translate.test.ts`): safe calls allowed; force-push,
+`test/grokAdapter.test.ts`, `test/cursorAdapter.test.ts`, `test/translate.test.ts`, `test/writeClassTools.test.ts`): safe calls allowed; force-push,
 protected-path writes (PascalCase, apply_patch, and the runtime-named `search_replace`/`Write`/`Delete` tools) and
 out-of-project writes denied; unverifiable writes and malformed input fail closed. The **built binaries** are
 additionally exercised end-to-end by the package smoke test (`scripts/smoke.mjs`), which feeds each vendor's exact

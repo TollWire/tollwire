@@ -13,7 +13,7 @@ import { globMayMatch } from "./writes.js";
 /** Credential stores relative to a home directory; an entry ending in `/` is a directory and covers everything below it. */
 export const CREDENTIAL_STORES: readonly string[] = [
   ".ssh/", ".aws/", ".gnupg/", ".kube/", ".azure/", ".netrc", ".npmrc", ".pypirc", ".git-credentials", ".docker/config.json",
-  ".config/gh/", ".config/gcloud/",
+  ".config/gh/", ".config/gcloud/", "Library/Keychains/",
 ];
 
 /** Tools that read files and are checked against the credential stores (they are not otherwise evaluated by the hook). */

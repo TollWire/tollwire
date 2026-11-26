@@ -8,7 +8,7 @@
       "source": {
         "source": "npm",
         "package": "@tollwire/guardrail-plugin",
-        "version": "0.1.6",
+        "version": "0.1.7",
         "registry": "https://registry.npmjs.org"
       },
       "description": "Blocks recognized writes to protected paths, dangerous shell commands and non-allowlisted dependencies; exposes the same checks as MCP tools."
@@ -18,7 +18,7 @@
       "source": {
         "source": "npm",
         "package": "@tollwire/evidence-mcp",
-        "version": "0.1.6",
+        "version": "0.1.7",
         "registry": "https://registry.npmjs.org"
       },
       "description": "Tamper-evident evidence log for reported agent changes, scans and approvals, with a draft ISO 27001 / NIS2 control mapping (not audited)."

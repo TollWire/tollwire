@@ -8,7 +8,7 @@ import { redactText } from "./redact.js";
 import { fileHash, locationEnv, managedSettingsPath, metaOf, pluginFilesHash, type Runtime } from "./runtime.js";
 import { standaloneSettings, readUserConfig, type LogSettings, type UserConfig } from "./settings.js";
 import { LogStore, readSessionFile, type FlowState, type SessionFile, type Tx } from "./store.js";
-import { INVALID, type ClaudeFields, type DecisionFields, type Draft, type PolicyFields, type ToolFields } from "./types.js";
+import { INVALID, type AgentName, type ClaudeFields, type DecisionFields, type Draft, type PolicyFields, type ToolFields } from "./types.js";
 import type { Effect } from "./commandInfo.js";
 
 /** A problem found while loading the policy that is reported as an event (not fatal). */
@@ -26,6 +26,10 @@ export interface LogContext {
   enterprise: { layout: Layout; settings: LogSettings } | null;
   policy: PolicyFields;
   findings: PolicyFinding[];
+  /** Agent of the adapter that runs this hook; omitted for events of tools that are not an agent hook. */
+  agent?: AgentName;
+  /** Nothing is written (the self-test of `tollgate-guard-status` evaluates a known deny case without a log entry). */
+  dryRun?: boolean;
 }
 
 export type LogResult = { ok: true; notice?: string } | { ok: false; message: string; block: boolean };
@@ -68,6 +72,21 @@ export interface LifecycleRecord {
   humanSession: boolean;
 }
 
+/** Result of the static enforcement check of one agent; every member is a flat scalar so that SIEM decoders can match it. */
+export interface EnforcementRecord {
+  agent: AgentName;
+  data: {
+    status: string;
+    reason: string;
+    hook_registered: boolean;
+    target_exists: boolean;
+    fail_closed: boolean | null;
+    self_test: string;
+    config_source: string | null;
+    human_session: boolean;
+  };
+}
+
 const MISSING_DIRECTORY =
   "TollWire enterprise mode: event directory missing. Ask your administrator to provision it (see the TollWire enterprise documentation).";
 const DISABLED_NOTICE = "TollWire decision log is disabled (user configuration).";
@@ -107,6 +126,11 @@ export class EventLogger {
   }
 
   // --- helpers --------------------------------------------------------------------------------------------------
+
+  /** The `agent` member of the drafts that belong to a tool call, session or taint change (nothing if no adapter named itself). */
+  private agentPart(): { agent?: { name: AgentName } } {
+    return this.ctx.agent === undefined ? {} : { agent: { name: this.ctx.agent } };
+  }
 
   private fail(settings: LogSettings, error: unknown): LogResult {
     const code = error instanceof EventWriteError ? error.code : "io";
@@ -178,6 +202,7 @@ export class EventLogger {
       .map(([path, count]) => ({ path: redactText(path).text, count }));
     return this.store.draft("suppressed", {
       claude: { ...claude, tool_use_id: null, agent_id: null, agent_type: null, permission_mode: null },
+      ...this.agentPart(),
       data: { count: flow.suppressed, window_start: new Date(flow.window * 60_000).toISOString(), top_paths: top },
     });
   }
@@ -213,6 +238,7 @@ export class EventLogger {
 
   /** One `decision` (or `observe`) event per evaluated call. Never throws. */
   recordDecision(rec: DecisionRecord): LogResult {
+    if (this.ctx.dryRun === true) return { ok: true };
     let settings: LogSettings = this.ctx.enterprise?.settings ?? standaloneSettings({ enabled: true, commandDetail: "none", projectDir: false });
     try {
       const resolved = this.settingsFor(rec.claude.session_id);
@@ -247,6 +273,7 @@ export class EventLogger {
           drafts.push(
             this.store.draft("decision", {
               claude,
+              ...this.agentPart(),
               tool,
               redactions: cmd.redactions + (reason?.redactions ?? 0) + pathRedactions,
               decision,
@@ -267,6 +294,7 @@ export class EventLogger {
    * error flag. With `tools = checked` only the checked tools are recorded. Never throws.
    */
   recordToolResult(rec: ToolResultRecord): LogResult {
+    if (this.ctx.dryRun === true) return { ok: true };
     let settings: LogSettings = this.ctx.enterprise?.settings ?? standaloneSettings({ enabled: true, commandDetail: "none", projectDir: false });
     try {
       const resolved = this.settingsFor(rec.claude.session_id);
@@ -288,7 +316,7 @@ export class EventLogger {
         const flood = this.flood(tx, rec.claude.session_id, settings.rateLimit, rec, rec.claude, false);
         drafts.push(...flood.pre);
         if (!flood.skip) {
-          drafts.push(this.store.draft("tool_result", { claude: rec.claude, tool, redactions: pathRedactions, policy: this.ctx.policy, data: { ...rec.data, human_session: rec.humanSession } }));
+          drafts.push(this.store.draft("tool_result", { claude: rec.claude, ...this.agentPart(), tool, redactions: pathRedactions, policy: this.ctx.policy, data: { ...rec.data, human_session: rec.humanSession } }));
         }
         if (drafts.length > 0) tx.append(drafts);
       });
@@ -300,6 +328,7 @@ export class EventLogger {
 
   /** Taint events. Written whenever the log is enabled (also with `tools = checked`); never summarized. Never throws. */
   recordTaint(rec: TaintRecord): LogResult {
+    if (this.ctx.dryRun === true) return { ok: true };
     let settings: LogSettings = this.ctx.enterprise?.settings ?? standaloneSettings({ enabled: true, commandDetail: "none", projectDir: false });
     try {
       const resolved = this.settingsFor(rec.claude.session_id);
@@ -307,7 +336,26 @@ export class EventLogger {
       if (!settings.enabled) return this.disabled(settings, resolved.configSha);
       this.store.transaction((tx) => {
         const drafts = [...this.transition(tx, true, resolved.configSha), ...this.findingDrafts(tx)];
-        drafts.push(this.store.draft(rec.type, { claude: rec.claude, policy: this.ctx.policy, data: { ...rec.data, human_session: rec.humanSession } }));
+        drafts.push(this.store.draft(rec.type, { claude: rec.claude, ...this.agentPart(), policy: this.ctx.policy, data: { ...rec.data, human_session: rec.humanSession } }));
+        tx.append(drafts);
+      });
+      return { ok: true };
+    } catch (error) {
+      return this.fail(settings, error);
+    }
+  }
+
+  /** One `enforcement_status` event per checked agent. Written whenever the log is enabled; never summarized. Never throws. */
+  recordEnforcementStatus(rec: EnforcementRecord): LogResult {
+    if (this.ctx.dryRun === true) return { ok: true };
+    let settings: LogSettings = this.ctx.enterprise?.settings ?? standaloneSettings({ enabled: true, commandDetail: "none", projectDir: false });
+    try {
+      const resolved = this.settingsFor(INVALID);
+      settings = resolved.settings;
+      if (!settings.enabled) return this.disabled(settings, resolved.configSha);
+      this.store.transaction((tx) => {
+        const drafts = [...this.transition(tx, true, resolved.configSha), ...this.findingDrafts(tx)];
+        drafts.push(this.store.draft("enforcement_status", { agent: { name: rec.agent }, policy: this.ctx.policy, data: { ...rec.data } }));
         tx.append(drafts);
       });
       return { ok: true };
@@ -318,6 +366,7 @@ export class EventLogger {
 
   /** Session and subagent events. Never throws. */
   recordLifecycle(rec: LifecycleRecord): LogResult {
+    if (this.ctx.dryRun === true) return { ok: true };
     let settings: LogSettings = this.ctx.enterprise?.settings ?? standaloneSettings({ enabled: true, commandDetail: "none", projectDir: false });
     try {
       const id = rec.claude.session_id;
@@ -370,7 +419,7 @@ export class EventLogger {
     drafts.push(...flood.pre);
     const data = { ...rec.data };
     if (rec.kind === "session_start") data.config_sha256 = configSha;
-    drafts.push(this.store.draft(rec.kind, { claude: rec.claude, policy: this.ctx.policy, data: { ...data, human_session: rec.humanSession } }));
+    drafts.push(this.store.draft(rec.kind, { claude: rec.claude, ...this.agentPart(), policy: this.ctx.policy, data: { ...data, human_session: rec.humanSession } }));
     tx.append(drafts);
   }
 

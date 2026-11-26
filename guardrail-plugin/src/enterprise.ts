@@ -592,6 +592,8 @@ export function resolvePolicy(options: ResolveOptions): Resolution {
   }
   // Variant S (shared directory) does not exist on macOS: fail closed instead of a silent other layout.
   if (darwin && enterprise.logging.layout === "shared") return { ok: false, kind: "policy_error", message: "enterprise policy: log layout \"shared\" is not available on macOS (fail closed)." };
+  // The lock check of the hook exists on Linux only: `control.enabled` must not be ignored silently on macOS (fail closed).
+  if (darwin && enterprise.control.enabled) return { ok: false, kind: "policy_error", message: "enterprise policy: admin locks (control.enabled) are not available on macOS (fail closed)." };
   let base: Policy;
   let baseSha: string;
   try {

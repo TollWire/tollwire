@@ -48,7 +48,7 @@ export interface ServerOptions {
 }
 
 export function createServer(configuredLogPath: string, options: ServerOptions = {}): McpStdioServer {
-  const server = new McpStdioServer({ name: "tollgate-evidence", version: "0.1.6" });
+  const server = new McpStdioServer({ name: "tollgate-evidence", version: "0.1.7" });
   // Resolved once: every check and every read/write of all tools refers to the same absolute path.
   const logPath = resolve(configuredLogPath);
   const root = options.root;

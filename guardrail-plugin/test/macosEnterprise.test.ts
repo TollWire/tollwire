@@ -303,3 +303,16 @@ describe("hook on a simulated macOS with the switch on (end to end)", () => {
     expect(r.code).toBe(0);
   });
 });
+
+describe("macOS: admin locks are not available (fail closed)", () => {
+  // The lock check of the hook runs on Linux only (control socket and lock file). A policy that switches the locks on must therefore not
+  // be accepted on macOS: silently ignoring `control.enabled` would leave an emergency stop that does not stop anything.
+  it("control.enabled = true is a policy_error on macOS", () => {
+    const f = fixture({ ...ENTERPRISE, control: { enabled: true } });
+    expect(resolvePolicy(f.options)).toMatchObject({ ok: false, kind: "policy_error", message: expect.stringContaining("locks") });
+  });
+  it("control.enabled = false or absent is accepted", () => {
+    expect(resolvePolicy(fixture({ ...ENTERPRISE, control: { enabled: false } }).options).ok).toBe(true);
+    expect(resolvePolicy(fixture().options).ok).toBe(true);
+  });
+});
