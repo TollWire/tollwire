@@ -7,14 +7,14 @@
   <!-- Everything is inline. The CSP below blocks every external load (scripts, styles, fonts, images, requests). -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
   <title>TollWire – Rules checked before your AI coding agent acts</title>
-  <meta name="description" content="TollWire is a policy guardrail for AI coding agents: it checks file writes, shell commands and new dependencies before they run, blocks recognized violations and keeps a hash-chained decision log. Runs locally. Defense in depth, not a sandbox.">
+  <meta name="description" content="TollWire is a policy guardrail for AI coding agents: it checks file writes, shell commands and new dependencies before they run, blocks recognized violations and keeps a hash-chained decision log. Runs locally. Defense in depth: the guardrail is a hook, not a sandbox.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://tollwire.github.io/tollwire/">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cstyle%3Erect,circle%7Bfill:%232456e6%7D@media(prefers-color-scheme:dark)%7Brect,circle%7Bfill:%238cb2ff%7D%7D%3C/style%3E%3Crect x='2' y='14.7' width='10.4' height='2.6' rx='1.3'/%3E%3Crect x='14.2' y='5' width='3.6' height='22' rx='1.8'/%3E%3Ccircle cx='22.2' cy='16' r='1.5' opacity='.5'/%3E%3Ccircle cx='26.2' cy='16' r='1.5' opacity='.34'/%3E%3C/svg%3E">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="TollWire">
   <meta property="og:title" content="TollWire – Rules checked before your AI coding agent acts">
-  <meta property="og:description" content="Policy guardrail for AI coding agents: checks writes, shell commands and dependencies before they run, blocks recognized violations, keeps a hash-chained decision log. Local. Not a sandbox.">
+  <meta property="og:description" content="Policy guardrail for AI coding agents: checks writes, shell commands and dependencies before they run, blocks recognized violations, keeps a hash-chained decision log. Local. The guardrail is a hook, not a sandbox.">
   <meta property="og:url" content="https://tollwire.github.io/tollwire/">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="TollWire – Rules checked before your AI coding agent acts">
@@ -439,7 +439,7 @@
     "operatingSystem": "Linux, macOS, Windows",
     "url": "https://tollwire.github.io/tollwire/",
     "softwareVersion": "0.1.6",
-    "description": "A policy guardrail for AI coding agents. It checks file writes, shell commands and new dependencies before they run, blocks recognized violations, and keeps a hash-chained decision log. The plugin code runs locally and makes no network requests. Defense in depth, not a sandbox.",
+    "description": "A policy guardrail for AI coding agents. It checks file writes, shell commands and new dependencies before they run, blocks recognized violations, and keeps a hash-chained decision log. The plugin code runs locally and makes no network requests. Defense in depth: the guardrail is a hook, not a sandbox.",
     "license": "https://polyformproject.org/licenses/noncommercial/1.0.0/",
     "sameAs": [
       "https://github.com/TollWire/tollwire",
@@ -489,7 +489,7 @@
         <ul class="trust">
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"/></svg>The plugin code makes no network requests</li>
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"/></svg>Fail-closed if the hook cannot run for a checked tool</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"/></svg>Defense in depth, not a sandbox</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"/></svg>Defense in depth — a hook, not a sandbox</li>
         </ul>
       </div>
       <div class="signal" role="img" aria-label="Demo recording of TollWire 0.1.6: four tool calls checked. Three blocked — a protected-path write, a disallowed dependency install and a write outside the project — and one allowed edit inside the project.">
@@ -526,12 +526,12 @@
       <div class="head">
         <span class="eyebrow">Live replay</span>
         <h2>Follow one tool call, step by step</h2>
-        <p>Pick a case and watch what happens between “the agent wants to act” and “a record exists”. Play, pause or step through it with the buttons or the arrow keys.</p>
+        <p>Step through what happens between “the agent wants to act” and “a record exists”. Play, pause or step with the buttons or arrow keys.</p>
       </div>
       <div class="player" id="player" role="region" aria-label="Interactive replay of TollWire decisions">
         <div class="cases" id="cases" role="group" aria-label="Choose a case"></div>
         <div class="screen">
-          <div class="tb"><i></i><i></i><i></i><b>demo@demo-host: /tmp/demo-project</b><em>REPLAY</em></div>
+          <div class="tb"><i></i><i></i><i></i><b>agent · your project</b><em>DEMO</em></div>
           <div class="stage" id="stage" tabindex="0" aria-label="Replay output. Use the left and right arrow keys to change scene, space to play or pause."></div>
         </div>
         <p class="live" id="live" aria-live="polite"></p>
@@ -543,32 +543,23 @@
         </div>
         <ol class="scenes" id="scenes" aria-label="Scenes"></ol>
         <p class="hint">Keyboard: focus the black panel, then &larr; / &rarr; for scenes and Space to play or pause. With reduced motion enabled in your system, nothing plays by itself and text appears at once.</p>
-        <p class="replay-note"><strong>Replay recorded output of TollWire 0.1.6 (demo project).</strong> Scenes 1 to 5 show output of the real hook (<code>dist/hookCli.js</code>) run on 2026-11-26 in a temporary demo project with the demo account <code>demo@demo-host</code>, including stderr text, exit codes and log hashes. The three check lanes in scene 2 are a schematic view. Scene 6 is optional and belongs to the separate enterprise edition: the Wazuh rule IDs and texts come from its rule file, the values are synthetic; it is not a recording of a Wazuh run.</p>
+        <p class="replay-note"><strong>Illustrative demo.</strong> Not a recording of real output; it does not show TollWire’s internal rules, formats or identifiers.</p>
       </div>
     </div>
   </section>
 
-  <!-- TRY IT (interactive console) -->
+  <!-- TRY IT (illustrative) -->
   <section id="try" class="sec">
     <div class="wrap">
       <div class="head">
         <span class="eyebrow">Try it</span>
-        <h2>Check a tool call, live</h2>
-        <p>Choose a tool, type a path or command, and see how a TollWire policy would decide &mdash; entirely in your browser. This is a <strong>simplified reproduction of the rule logic for illustration</strong>; the real hook (<code>dist/hookCli.js</code>) is authoritative and checks more.</p>
+        <h2>What gets blocked &mdash; and what doesn&rsquo;t</h2>
+        <p>Tap an example to see how a TollWire policy would decide. Illustrative outcomes &mdash; your own policy decides the specifics.</p>
       </div>
       <div class="glasscard">
-        <div class="tryrow">
-          <div class="seg" id="tryTools" role="radiogroup" aria-label="Tool">
-            <button type="button" role="radio" aria-checked="true" data-tool="Write">Write</button>
-            <button type="button" role="radio" aria-checked="false" data-tool="Edit">Edit</button>
-            <button type="button" role="radio" aria-checked="false" data-tool="Bash">Bash</button>
-          </div>
-          <input id="tryInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="File path or shell command" placeholder="e.g. .git/hooks/pre-commit">
-          <button id="tryGo" class="btn btn-primary" type="button">Check</button>
-        </div>
-        <div class="examples" id="tryEx" aria-label="Examples to try"></div>
+        <div class="examples" id="tryEx" aria-label="Examples"></div>
         <div class="verdictbox" id="tryOut" aria-live="polite" hidden></div>
-        <p class="trynote">Nothing leaves your browser. The checks here are a small illustrative subset (protected paths, writes outside the project, unlisted dependencies, a few risky commands). Full rules and limits are in the <a href="https://github.com/TollWire/tollwire#limits">README</a>.</p>
+        <p class="trynote">Illustrative only &mdash; nothing leaves your browser, and these are not the actual rules.</p>
       </div>
     </div>
   </section>
@@ -583,14 +574,14 @@
       </div>
       <ul class="grid3">
         <li class="card"><div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V7l8-4z"/></svg></div>
-          <h3>Protected paths</h3><p>Writes to configuration, policies, CI, git hooks and agent setup are blocked, and so are writes outside the project directory. Common detours such as symlink targets are accounted for. No guarantee.</p></li>
+          <h3>Protected paths</h3><p>Writes to configuration, policies, CI, git hooks and agent setup are blocked, and so are writes outside the project directory. No guarantee.</p></li>
         <li class="card"><div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M8 10l3 2-3 2"/><path d="M13 14h4"/></svg></div>
-          <h3>Dangerous commands</h3><p>Shell commands are checked heuristically against your rules before they run, for example force pushes or <code>sudo</code>. Known bypasses such as loader variables are accounted for.</p></li>
+          <h3>Dangerous commands</h3><p>Shell commands are checked against your rules before they run, for example force pushes or <code>sudo</code>.</p></li>
         <li class="card"><div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M12 2v18M4 6.5l8 4.5 8-4.5"/></svg></div>
-          <h3>Dependencies</h3><p>New packages are checked against an allowlist. The default policy ships an empty allowlist, so installs are blocked until you approve packages.</p></li>
+          <h3>Dependencies</h3><p>New packages are checked against an allowlist. Installs are blocked until you approve the package.</p></li>
       </ul>
       <div class="note">
-        <p><strong>Honestly scoped.</strong> The check is a blocklist: what no rule recognizes is allowed. It does not analyze script files, <code>make</code> or <code>npm run</code>, and it works only if the agent loads the hook. TollWire is <strong>defense in depth, not a sandbox</strong> and does not replace an audit. Run the agent in a container or sandbox as well. See “Limits” in the <a href="https://github.com/TollWire/tollwire#limits">README</a>.</p>
+        <p><strong>Honestly scoped.</strong> TollWire’s guardrail recognizes and blocks risky actions <em>before</em> they run; it is <strong>defense in depth — a hook, not a sandbox</strong>, and does not replace an audit. Run the agent in a container or OS sandbox as well. See “Limits” in the <a href="https://github.com/TollWire/tollwire#limits">README</a>.</p>
       </div>
     </div>
   </section>
@@ -601,19 +592,19 @@
       <div class="head">
         <span class="eyebrow">Supported agents</span>
         <h2>One policy engine, several agents. Honest status.</h2>
-        <p>Claude Code has the plugin hook. The other adapters pass each agent’s pre-execution hook call to the same decision engine, and they are experimental. What happens when a hook fails differs per agent, so the badge tells you whether a block is really enforced.</p>
+        <p>Claude Code uses the native plugin hook. Other agents are wired to the same decision engine and are experimental; the badge tells you how strong the guarantee is for each.</p>
       </div>
       <ul class="agents">
         <li class="card agent"><div class="top"><h3>Claude Code</h3><span class="badge enf">ENFORCED</span></div>
-          <p>Plugin hook (<code>PreToolUse</code>). Fail-closed for the checked tools: if <code>node</code> or the hook is missing or crashes, the call is blocked.</p></li>
+          <p>Native plugin hook. Checked calls are blocked, fail-closed.</p></li>
         <li class="card agent"><div class="top"><h3>Codex CLI</h3><span class="badge enf">ENFORCED</span><span class="badge exp">EXPERIMENTAL</span></div>
-          <p>Deny = exit code 2 plus a deny JSON on stdout. Codex asks you to review and trust non-managed hooks (<code>/hooks</code>) before they run.</p></li>
+          <p>Enforced through its hook. You review and trust the hook before it runs.</p></li>
         <li class="card agent"><div class="top"><h3>Cursor</h3><span class="badge enf">ENFORCED</span><span class="badge exp">EXPERIMENTAL</span></div>
-          <p>Fail-closed <strong>only</strong> if the hook is registered with <code>"failClosed": true</code>. Without it the adapter is <span class="badge deg" style="font-size:.62rem;padding:3px 6px">DEGRADED</span>: a crash or timeout lets the call through.</p></li>
+          <p>Enforced when configured to fail closed; otherwise best-effort.</p></li>
         <li class="card agent"><div class="top"><h3>Copilot CLI</h3><span class="badge deg">DEGRADED</span><span class="badge exp">EXPERIMENTAL</span></div>
-          <p>An explicit deny blocks (exit 2 plus deny JSON). A hook <strong>timeout is fail-open</strong>: the tool proceeds. Keep the hook fast.</p></li>
+          <p>Enforced on explicit denials; best-effort in some failure modes — treat as defense in depth.</p></li>
         <li class="card agent"><div class="top"><h3>Grok Build</h3><span class="badge deg">DEGRADED</span><span class="badge exp">EXPERIMENTAL</span></div>
-          <p>Fail-open on crashes, timeouts and malformed output; only an explicit deny blocks. The adapter emits an explicit deny on any error it can catch.</p></li>
+          <p>Enforced on explicit denials; best-effort only — pair with OS isolation.</p></li>
       </ul>
       <div class="note"><p><strong>Status of the adapters:</strong> they are tested against each agent’s documented hook format, not against every agent release, and a live run on each installed CLI is still pending. A Gemini CLI adapter is not shipped. Setup per agent: <a href="https://github.com/TollWire/tollwire/blob/main/guardrail-plugin/docs/multi-agent.md">multi-agent guide</a>. Product names are trademarks of their respective owners; TollWire is not affiliated with or endorsed by them.</p></div>
     </div>
@@ -630,7 +621,7 @@
       <ol class="steps">
         <li class="step"><span class="n"></span><h3>Intercept</h3><p>The agent is about to write a file or run a command. The hook receives the call first.</p></li>
         <li class="step"><span class="n"></span><h3>Check</h3><p>Paths, commands and dependencies are compared with your policy. Recognized violations are hits.</p></li>
-        <li class="step"><span class="n"></span><h3>Decide</h3><p>No hit: exit 0, the call goes through. Hit or error: exit 2, blocked, with the reason on stderr.</p></li>
+        <li class="step"><span class="n"></span><h3>Decide</h3><p>Allowed calls go through; recognized violations are blocked, with the reason shown.</p></li>
         <li class="step"><span class="n"></span><h3>Record</h3><p>Each evaluation is written to a hash-chained decision log you can verify. You can switch it off.</p></li>
       </ol>
     </div>
@@ -668,12 +659,12 @@
             <rect x="318" y="182" width="172" height="28" rx="8" fill="var(--surface)" stroke="var(--border)"/><text x="404" y="200" text-anchor="middle">Dependencies</text>
           </g>
           <line x1="512" y1="104" x2="650" y2="76" stroke="var(--ok)" stroke-width="2.6" marker-end="url(#arwG)"/>
-          <text x="582" y="76" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--ok)">exit 0 · allowed</text>
+          <text x="582" y="76" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--ok)">allowed</text>
           <rect x="650" y="44" width="150" height="64" rx="13" fill="var(--surface-2)" stroke="var(--border-strong)" stroke-width="1.5"/>
           <text x="725" y="72" text-anchor="middle" font-size="14.5" font-weight="700" fill="var(--fg)">System</text>
           <text x="725" y="92" text-anchor="middle" font-size="12" fill="var(--muted)">Files · Shell</text>
           <line x1="512" y1="168" x2="650" y2="190" stroke="var(--block)" stroke-width="2.6" marker-end="url(#arwB)"/>
-          <text x="584" y="196" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--block)">exit 2 · blocked</text>
+          <text x="584" y="196" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--block)">blocked</text>
           <circle cx="690" cy="196" r="22" fill="color-mix(in srgb,var(--block) 13%, var(--surface))" stroke="var(--block)" stroke-width="2"/>
           <path d="M681 187l18 18M699 187l-18 18" stroke="var(--block)" stroke-width="2.6" stroke-linecap="round"/>
           <rect x="828" y="88" width="116" height="96" rx="14" fill="var(--surface-2)" stroke="var(--border-strong)" stroke-width="1.5" stroke-dasharray="5 4"/>
@@ -697,7 +688,7 @@
         <ol class="arch-fallback">
           <li><strong>Coding agent</strong> sends a Write, Bash or Edit call.</li>
           <li><strong>TollWire hook</strong> (<code>PreToolUse</code>) checks paths, commands and dependencies against your policy.</li>
-          <li><strong>No hit</strong>: exit 0, the call goes to the system. <strong>Hit or error</strong>: exit 2, blocked.</li>
+          <li><strong>Allowed</strong> calls go to the system; <strong>recognized violations</strong> are blocked.</li>
           <li>Each decision is written to the hash-chained <strong>decision log</strong>. Control mappings (ISO 27001, NIS2, SOC 2) are drafts, not audited. The enterprise edition forwards the log to a SIEM.</li>
         </ol>
         <ul class="legend">
@@ -832,266 +823,69 @@ npm view @tollwire/evidence-mcp@0.1.6 dist.integrity</div>
   const $ = (id) => document.getElementById(id);
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
   const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-
-  /* Data below is output of the real hook (dist/hookCli.js, TollWire 0.1.6), run 2026-11-26 in a temporary demo project. */
-  const J = JSON.stringify;
+  // Illustrative demo only — not real output; shows no internal rules, formats or identifiers.
   const CASES = [
-    { id: "protected", label: "Protected path", name: "Write", target: ".git/hooks/pre-commit", code: 2,
-      input: { session_id: "demo-session", tool_use_id: "demo-tu-1", cwd: "/tmp/demo-project", tool_name: "Write", tool_input: { file_path: "/tmp/demo-project/.git/hooks/pre-commit", content: "#!/bin/sh\n" } },
-      stderr: "TollWire guardrail: blocked.\nrule_id: .git/hooks/\nrule_kind: protected_path\ntarget (untrusted, verbatim): \".git/hooks/pre-commit\"\ndetail: the target is a protected path; changes need human review.\nfix: protected path - deliver the change as a patch file (for example in the repository's patches directory) for human review; do not retry or work around it.\n",
-      ev: { ts: "2026-11-26T00:39:38.844Z", tool: { name: "Write", truncated: false, paths: [".git/hooks/pre-commit"], effects: ["write"] }, decision: { outcome: "deny", rule_kind: "protected_path", rule_id: ".git/hooks/", reason: ".git/hooks/pre-commit is a protected path (.git/hooks/); changes need human review." }, seq: 2, prev_hash: "6106221271e3f3fa74b0bcbf6e61a49c33bf2215c9d7dd45e23f56e027679d87", hash: "ae3fd3e20dbdbcabe7968b8a8c178d526ce2162e8279fa71040b99afbfdde8b5" },
-      lanes: [["Paths", ".git/hooks/pre-commit", "hit", "PROTECTED"], ["Commands", "no shell command (Write tool)", "na", "n/a"], ["Dependencies", "no package install", "na", "n/a"]],
-      why: "The target lies under .git/hooks/, one of the built-in protected paths. Changes there need human review, so the agent is told to deliver a patch file instead.",
-      siem: [["100110", "5", "TollWire: guardrail blocked a tool call (protected_path)", "T1059"]] },
-    { id: "dependency", label: "New dependency", name: "Bash", target: "npm install left-pad", code: 2,
-      input: { session_id: "demo-session", tool_use_id: "demo-tu-2", cwd: "/tmp/demo-project", tool_name: "Bash", tool_input: { command: "npm install left-pad" } },
-      stderr: "TollWire guardrail: blocked.\nrule_id: allowedDependencies\nrule_kind: dependency\ntarget (untrusted, verbatim): \"npm install left-pad\"\ndetail: Dependencies not on the allowlist: npm:left-pad.\nfix: dependency not approved - approval is a policy change (R2) by a human; do not add it.\n",
-      ev: { ts: "2026-11-26T00:39:39.017Z", tool: { name: "Bash", truncated: false, programs: ["npm"], paths: [], effects: ["package"] }, decision: { outcome: "deny", rule_kind: "dependency", rule_id: "allowedDependencies", reason: "Dependencies not on the allowlist: npm:left-pad." }, seq: 3, prev_hash: "ae3fd3e20dbdbcabe7968b8a8c178d526ce2162e8279fa71040b99afbfdde8b5", hash: "a124cebe4fe51f0a83a3feaa28fb76969c386fc4257d1cba3148a7696eb2d60e" },
-      lanes: [["Paths", "no file target", "na", "n/a"], ["Commands", "npm install left-pad", "pass", "RECOGNIZED"], ["Dependencies", "npm:left-pad", "hit", "NOT ALLOWED"]],
-      why: "The command installs a package, and npm:left-pad is not on the allowlist. The default policy ships an empty allowlist, so approving a package is a deliberate policy change by a human.",
-      siem: [["100110", "5", "TollWire: guardrail blocked a tool call (dependency)", "T1059"], ["100111", "6", "TollWire: dependency not on the allowlist blocked", "T1195.001"]] },
-    { id: "outside", label: "Outside project", name: "Write", target: "/etc/demo-outside.txt", code: 2,
-      input: { session_id: "demo-session", tool_use_id: "demo-tu-3", cwd: "/tmp/demo-project", tool_name: "Write", tool_input: { file_path: "/etc/demo-outside.txt", content: "x" } },
-      stderr: "TollWire guardrail: blocked.\nrule_id: -\nrule_kind: outside_project\ntarget (untrusted, verbatim): \"/etc/demo-outside.txt\"\ndetail: the target is outside the project directory.\nfix: outside the project directory - use a path inside the project.\n",
-      ev: { ts: "2026-11-26T00:39:39.160Z", tool: { name: "Write", truncated: false, paths: ["/etc/demo-outside.txt"], effects: ["write"] }, decision: { outcome: "deny", rule_kind: "outside_project", rule_id: null, reason: "/etc/demo-outside.txt is outside the project directory." }, seq: 4, prev_hash: "a124cebe4fe51f0a83a3feaa28fb76969c386fc4257d1cba3148a7696eb2d60e", hash: "6ebf95918f8003579dfeec3c0812161463fc72f9b730982f31b30defdc635622" },
-      lanes: [["Paths", "/etc/demo-outside.txt", "hit", "OUTSIDE"], ["Commands", "no shell command (Write tool)", "na", "n/a"], ["Dependencies", "no package install", "na", "n/a"]],
-      why: "Writes are only allowed inside the project directory. This target is not, and there is no named rule behind it (rule_id is empty).",
-      siem: [["100110", "5", "TollWire: guardrail blocked a tool call (outside_project)", "T1059"]] },
-    { id: "allowed", label: "Allowed edit", name: "Edit", target: "src/routes.ts", code: 0,
-      input: { session_id: "demo-session", tool_use_id: "demo-tu-4", cwd: "/tmp/demo-project", tool_name: "Edit", tool_input: { file_path: "/tmp/demo-project/src/routes.ts", old_string: "a", new_string: "b" } },
-      stderr: "",
-      ev: { ts: "2026-11-26T00:39:39.309Z", tool: { name: "Edit", truncated: false, paths: ["src/routes.ts"], effects: ["write"] }, decision: { outcome: "allow", rule_kind: "none", rule_id: null, reason: null }, seq: 5, prev_hash: "6ebf95918f8003579dfeec3c0812161463fc72f9b730982f31b30defdc635622", hash: "6eb15aa509a9ea43f8b231f0371963aa893a8f76ae60e270fd103158cebc9146" },
-      lanes: [["Paths", "src/routes.ts", "pass", "NO HIT"], ["Commands", "no shell command (Edit tool)", "na", "n/a"], ["Dependencies", "no package install", "na", "n/a"]],
-      why: "No rule matched, so the call is allowed. The check is a blocklist: whatever no rule recognizes is allowed. That is why TollWire complements a sandbox and does not replace one.",
-      siem: [] }
+    { label: "Protected location", action: "Write to a protected location", outcome: "deny", reason: "A protected location — changes there need human review." },
+    { label: "New dependency", action: "Install an unlisted dependency", outcome: "deny", reason: "Not on your approved list — approving it is a human decision." },
+    { label: "Outside project", action: "Write outside the project", outcome: "deny", reason: "Writes stay inside the project." },
+    { label: "Allowed edit", action: "Edit a source file", outcome: "allow", reason: "Nothing matched — the call runs." }
   ];
   const SCENES = [
-    ["Agent acts", "The agent wants to act. Before the call runs, its tool call is handed to the hook."],
-    ["Hook checks", "The hook compares paths, commands and dependencies with the policy."],
-    ["Reaction", ""],
-    ["Why", "The reason, as the hook reports it."],
-    ["Evidence", "One event is appended to the hash-chained decision log."],
-    ["SIEM", "Optional, enterprise edition: the event is forwarded to a SIEM and can raise an alert."]
+    ["Agent acts", "The agent is about to act. The call is checked first — before it runs."],
+    ["Checked", "The call is evaluated against your policy."],
+    ["Decision", ""],
+    ["Recorded", "A tamper-evident, linked record is written — later changes are detectable."]
   ];
-  const short = (s) => s.slice(0, 12) + "…";
-
   const stage = $("stage"), live = $("live"), playBtn = $("play"), prevBtn = $("prev"), nextBtn = $("next");
   let ci = 0, si = 0, playing = false, timers = [], seen = false;
-
   const later = (fn, ms) => { timers.push(setTimeout(fn, ms)); };
   const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
   const animate = () => !reduce.matches;
-
-  /* Typed text: the full text stays available to assistive technology; the visible copy is revealed progressively. */
   function typed(parent, text, cls, delay, speed) {
-    const line = h("div", "ln" + (cls ? " " + cls : ""));
-    const full = h("span", "sr", text);
-    const vis = h("span", null, "");
-    vis.setAttribute("aria-hidden", "true");
-    line.append(full, vis);
-    parent.append(line);
+    const line = h("div", "ln" + (cls ? " " + cls : "")); const full = h("span", "sr", text); const vis = h("span", null, "");
+    vis.setAttribute("aria-hidden", "true"); line.append(full, vis); parent.append(line);
     if (!animate()) { vis.textContent = text; return delay; }
-    const step = Math.max(1, Math.round(text.length / 160));
-    let i = 0;
+    const step = Math.max(1, Math.round(text.length / 120)); let i = 0;
     const tick = () => { i = Math.min(text.length, i + step); vis.textContent = text.slice(0, i); if (i < text.length) later(tick, speed); };
-    later(tick, delay);
-    return delay + Math.ceil(text.length / step) * speed;
+    later(tick, delay); return delay + Math.ceil(text.length / step) * speed;
   }
-  const pop = (parent, node, delay) => {
-    parent.append(node);
-    if (!animate()) return delay;
-    node.style.visibility = "hidden";
-    later(() => { node.style.visibility = ""; node.classList.add("in"); }, delay);
-    return delay;
-  };
-
+  const pop = (parent, node, delay) => { parent.append(node); if (!animate()) return delay; node.style.visibility = "hidden"; later(() => { node.style.visibility = ""; node.classList.add("in"); }, delay); return delay; };
   const scenes = [
-    /* 1 */ (c) => {
-      let t = 0;
-      const ln = h("div", "ln dim", "Claude Code · tool call");
-      stage.append(ln);
-      t = typed(stage, c.name + "(" + c.target + ")", "blu", 150, 28) + 250;
-      stage.append(Object.assign(h("div", "ln dim gap", "PreToolUse payload on the hook’s stdin:"), {}));
-      t = typed(stage, J(c.input), "", t, 5) + 100;
-      return t;
-    },
-    /* 2 */ (c) => {
-      let t = 0;
-      stage.append(h("div", "ln", "$ node dist/hookCli.js --event PreToolUse"));
-      const lanes = h("div", "lanes");
-      stage.append(lanes);
-      c.lanes.forEach((l, i) => {
-        const el = h("div", "lane");
-        el.append(h("span", "nm", l[0]), h("span", "tg", l[1]), h("span", "res", "…"));
-        lanes.append(el);
-        const fin = () => { el.className = "lane " + l[2]; el.lastChild.textContent = l[3]; };
-        if (!animate()) { fin(); return; }
-        const start = 300 + i * 900;
-        later(() => { el.className = "lane checking"; el.lastChild.textContent = "CHECKING"; }, start);
-        later(fin, start + 750);
-        t = start + 750;
-      });
-      const tl = h("div", "ln dim gap", "tool (from the log event): " + J(c.ev.tool));
-      stage.append(tl);
-      return Math.max(t, 0) + 200;
-    },
-    /* 3 */ (c) => {
-      const deny = c.code === 2;
-      let t = 0;
-      stage.append(h("div", "ln dim", "$ node dist/hookCli.js --event PreToolUse < payload.json"));
-      const v = h("div", "verdict " + (deny ? "bad" : "good"), deny ? "BLOCKED" : "ALLOWED");
-      t = pop(stage, v, 300);
-      if (deny) {
-        stage.append(h("div", "ln dim", "stderr:"));
-        t = typed(stage, c.stderr.replace(/\n$/, ""), "pre", t + 150, 6) + 150;
-      } else {
-        stage.append(h("div", "ln dim", "(no output on stdout or stderr)"));
-      }
-      const ex = h("div", "ln " + (deny ? "red" : "grn"), "exit code: " + c.code + (deny ? "  → the agent’s call does not run" : "  → the agent’s call runs"));
-      pop(stage, ex, t + 200);
-      return t + 400;
-    },
-    /* 4 */ (c) => {
-      const d = c.ev.decision, deny = d.outcome === "deny";
-      const dl = h("dl", "kv");
-      const row = (k, v, cls) => { dl.append(h("dt", null, k), h("dd", cls, v)); };
-      stage.append(h("div", "ln " + (deny ? "red" : "grn"), deny ? "Why it was blocked" : "Why it was allowed"));
-      row("outcome", d.outcome, deny ? "red" : "grn");
-      row("rule_kind", d.rule_kind);
-      row("rule_id", d.rule_id == null ? "(none)" : d.rule_id);
-      row("reason", d.reason == null ? "no rule matched" : d.reason);
-      stage.append(dl);
-      const p = h("p", "ln gap", c.why);
-      stage.append(p);
-      if (!animate()) return 0;
-      [...dl.children].forEach((n, i) => { n.style.visibility = "hidden"; later(() => { n.style.visibility = ""; n.classList.add("in"); }, 150 + i * 90); });
-      p.style.visibility = "hidden"; later(() => { p.style.visibility = ""; p.classList.add("in"); }, 700);
-      return 900;
-    },
-    /* 5 */ (c) => {
-      const e = c.ev;
-      stage.append(h("div", "ln dim", "Decision log event (shortened; the real one has more fields):"));
-      const o = { type: "decision", ts: e.ts, host: { name: "demo-host" }, user: { name: "demo" }, tool: e.tool, decision: e.decision, seq: e.seq, prev_hash: e.prev_hash, hash: e.hash };
-      const pre = h("div", "ln pre", JSON.stringify(o, null, 1));
-      let t = pop(stage, pre, 150);
-      const ch = h("div", "chain");
-      const b1 = h("div", "blk"); b1.append(h("div", "h", "seq " + (e.seq - 1) + " (previous event)"), h("div", null, "hash " + short(e.prev_hash)));
-      const ar = h("div", "arrow", "prev_hash →");
-      const b2 = h("div", "blk cur"); b2.append(h("div", "h", "seq " + e.seq + " (this decision)"), h("div", null, "hash " + short(e.hash)));
-      ch.append(b1, ar, b2);
-      pop(stage, ch, t + 500);
-      stage.append(h("div", "ln dim gap", "Each event contains the hash of its predecessor. Changing an earlier entry breaks the chain, and verification shows it."));
-      return t + 800;
-    },
-    /* 6 */ (c) => {
-      stage.append(h("div", "ln amb", "Enterprise edition (separate, commercial) · optional"));
-      const flow = h("div", "flow");
-      ["hook event", "relay", "Wazuh agent", "Wazuh manager"].forEach((n, i, a) => {
-        const nd = h("span", "node", n); flow.append(nd);
-        if (i < a.length - 1) flow.append(h("span", "dim", "→"));
-        if (animate()) later(() => nd.classList.add("on"), 250 + i * 450); else nd.classList.add("on");
-      });
-      stage.append(flow);
-      const base = animate() ? 250 + 4 * 450 : 0;
-      let t = base;
-      if (!c.siem.length) {
-        const n = h("div", "ln gap", "No alert. Rule 100110 matches decision events with outcome deny only; this call was allowed.");
-        t = pop(stage, n, base);
-      } else {
-        c.siem.forEach((a, i) => {
-          const box = h("div", "alert");
-          box.append(h("div", "amb", "ALERT · rule " + a[0] + " · level " + a[1]), h("div", null, a[2]), h("div", "dim", "MITRE ATT&CK " + a[3] + " · user demo · host demo-host"));
-          t = pop(stage, box, base + i * 450);
-        });
-      }
-      stage.append(h("div", "ln dim gap", "Rule IDs, levels and texts: wazuh/local_rules.xml of the enterprise edition. Values are synthetic; this is not a recording of a Wazuh run."));
-      return t + 300;
-    }
+    (c) => { stage.append(h("div", "ln dim", "Agent")); return typed(stage, c.action, "blu", 150, 24) + 250; },
+    (c) => { stage.append(h("div", "ln dim", "Checking against your policy…")); const el = h("div", "lane"); el.append(h("span", "nm", "Policy"), h("span", "tg", c.action), h("span", "res", "…")); stage.append(el);
+      const fin = () => { el.className = "lane " + (c.outcome === "deny" ? "hit" : "pass"); el.lastChild.textContent = c.outcome === "deny" ? "MATCH" : "NO MATCH"; };
+      if (!animate()) { fin(); return 0; } later(() => { el.className = "lane checking"; el.lastChild.textContent = "CHECKING"; }, 300); later(fin, 1100); return 1100; },
+    (c) => { const deny = c.outcome === "deny"; let t = pop(stage, h("div", "verdict " + (deny ? "bad" : "good"), deny ? "BLOCKED" : "ALLOWED"), 250);
+      pop(stage, h("p", "ln gap " + (deny ? "red" : "grn"), c.reason), t + 150);
+      pop(stage, h("div", "ln dim", deny ? "→ the call does not run" : "→ the call runs"), t + 350); return t + 500; },
+    (c) => { stage.append(h("div", "ln grn", "Recorded")); return pop(stage, h("p", "ln gap", "A tamper-evident, linked record of this decision is written. Later changes to it are detectable when the record is verified."), 200) + 300; }
   ];
-
-  function capFor(c) {
-    if (si === 2) return c.code === 2 ? "Reaction: the hook exits with code 2 and the call is blocked. The reason goes to stderr." : "Reaction: the hook exits with code 0 and stays silent. The call is allowed.";
-    if (si === 0) return SCENES[0][1] + " Case: " + c.label + ".";
-    return SCENES[si][1];
-  }
-
+  function capFor(c) { if (si === 2) return c.outcome === "deny" ? "The call is blocked before it runs." : "The call is allowed."; if (si === 0) return SCENES[0][1] + " Example: " + c.label + "."; return SCENES[si][1]; }
   function render() {
-    clearTimers();
-    const c = CASES[ci];
-    stage.replaceChildren();
-    const dur = scenes[si](c);
-    live.replaceChildren(h("strong", null, (si + 1) + " of 6 · " + SCENES[si][0] + ". "), document.createTextNode(capFor(c)));
-    [...$("scenes").children].forEach((li, i) => {
-      const b = li.firstChild;
-      if (i === si) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
-      b.classList.toggle("done", i < si);
-    });
+    clearTimers(); const c = CASES[ci]; stage.replaceChildren(); const dur = scenes[si](c);
+    live.replaceChildren(h("strong", null, (si + 1) + " of " + SCENES.length + " · " + SCENES[si][0] + ". "), document.createTextNode(capFor(c)));
+    [...$("scenes").children].forEach((li, i) => { const b = li.firstChild; if (i === si) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); b.classList.toggle("done", i < si); });
     [...$("cases").children].forEach((b, i) => b.setAttribute("aria-pressed", String(i === ci)));
-    prevBtn.disabled = si === 0;
-    nextBtn.disabled = si === SCENES.length - 1;
-    if (playing) {
-      if (si === SCENES.length - 1) later(() => setPlaying(false), (animate() ? dur : 0) + 400);
-      else later(() => { si += 1; render(); }, dur + 2600);
-    }
+    prevBtn.disabled = si === 0; nextBtn.disabled = si === SCENES.length - 1;
+    if (playing) { if (si === SCENES.length - 1) later(() => setPlaying(false), (animate() ? dur : 0) + 400); else later(() => { si += 1; render(); }, dur + 2200); }
     return dur;
   }
-  function setPlaying(p) {
-    playing = p;
-    playBtn.textContent = p ? "Pause" : (si === SCENES.length - 1 ? "Replay" : "Play");
-    playBtn.setAttribute("aria-label", p ? "Pause replay" : (si === SCENES.length - 1 ? "Replay from the start" : "Play replay"));
-    if (!p) clearTimers();
-  }
-  const go = (n, keepPlay) => {
-    si = Math.max(0, Math.min(SCENES.length - 1, n));
-    if (!keepPlay) setPlaying(false);
-    render();
-    if (!playing) playBtn.textContent = si === SCENES.length - 1 ? "Replay" : "Play";
-  };
-
-  /* build controls */
-  CASES.forEach((c, i) => {
-    const b = h("button", "case", c.label); b.type = "button"; b.setAttribute("aria-pressed", String(i === 0));
-    b.addEventListener("click", () => { ci = i; const was = playing; si = 0; setPlaying(was && animate()); render(); });
-    $("cases").append(b);
-  });
-  SCENES.forEach((s, i) => {
-    const li = document.createElement("li"), b = h("button", null);
-    b.type = "button";
-    b.append(h("span", "n", String(i + 1)), document.createTextNode(i === 5 ? s[0] + " (optional)" : s[0]));
-    b.addEventListener("click", () => go(i));
-    li.append(b); $("scenes").append(li);
-  });
+  function setPlaying(pl) { playing = pl; playBtn.textContent = pl ? "Pause" : (si === SCENES.length - 1 ? "Replay" : "Play"); playBtn.setAttribute("aria-label", pl ? "Pause" : "Play"); if (!pl) clearTimers(); }
+  const go = (n) => { si = Math.max(0, Math.min(SCENES.length - 1, n)); setPlaying(false); render(); };
+  CASES.forEach((c, i) => { const b = h("button", "case", c.label); b.type = "button"; b.setAttribute("aria-pressed", String(i === 0)); b.addEventListener("click", () => { ci = i; const was = playing; si = 0; setPlaying(was && animate()); render(); }); $("cases").append(b); });
+  SCENES.forEach((sc, i) => { const li = document.createElement("li"), b = h("button", null); b.type = "button"; b.append(h("span", "n", String(i + 1)), document.createTextNode(sc[0])); b.addEventListener("click", () => go(i)); li.append(b); $("scenes").append(li); });
   prevBtn.addEventListener("click", () => go(si - 1));
   nextBtn.addEventListener("click", () => go(si + 1));
-  $("restart").addEventListener("click", () => { go(0); });
-  playBtn.addEventListener("click", () => {
-    if (playing) { setPlaying(false); return; }
-    if (si === SCENES.length - 1) si = 0;
-    setPlaying(true); render();
-  });
-  stage.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowRight") { e.preventDefault(); go(si + 1); }
-    else if (e.key === "ArrowLeft") { e.preventDefault(); go(si - 1); }
-    else if (e.key === " ") { e.preventDefault(); playBtn.click(); }
-  });
+  $("restart").addEventListener("click", () => go(0));
+  playBtn.addEventListener("click", () => { if (playing) { setPlaying(false); return; } if (si === SCENES.length - 1) si = 0; setPlaying(true); render(); });
+  stage.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") { e.preventDefault(); go(si + 1); } else if (e.key === "ArrowLeft") { e.preventDefault(); go(si - 1); } else if (e.key === " ") { e.preventDefault(); playBtn.click(); } });
   reduce.addEventListener && reduce.addEventListener("change", () => { if (reduce.matches && playing) setPlaying(false); render(); });
-
-  render();
-  setPlaying(false);
-  /* Start by itself once visible, unless the system asks for reduced motion. Pause stops it at any time. */
-  if ("IntersectionObserver" in window && animate()) {
-    new IntersectionObserver((en, ob) => {
-      if (en[0].isIntersecting && !seen) { seen = true; ob.disconnect(); if (si === 0 && !playing) { setPlaying(true); render(); } }
-    }, { threshold: 0.45 }).observe($("player"));
-  }
-
-  /* copy buttons (local clipboard only) */
+  render(); setPlaying(false);
+  if ("IntersectionObserver" in window && animate()) { new IntersectionObserver((en, ob) => { if (en[0].isIntersecting && !seen) { seen = true; ob.disconnect(); if (si === 0 && !playing) { setPlaying(true); render(); } } }, { threshold: 0.45 }).observe($("player")); }
   document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", () => {
-    const src = $(b.getAttribute("data-copy"));
-    const text = [...src.childNodes].filter((n) => n !== b).map((n) => n.textContent).join("");
+    const src = $(b.getAttribute("data-copy")); const text = [...src.childNodes].filter((n) => n !== b).map((n) => n.textContent).join("");
     const done = (m) => { b.textContent = m; setTimeout(() => { b.textContent = "Copy"; }, 1800); };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done("Copied"), () => done("Select text"));
-    else done("Select text");
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done("Copied"), () => done("Select text")); else done("Select text");
   }));
 })();
 </script>
@@ -1117,73 +911,25 @@ npm view @tollwire/evidence-mcp@0.1.6 dist.integrity</div>
 <script>
 (() => {
   "use strict";
-  var input = document.getElementById("tryInput"), out = document.getElementById("tryOut"),
-      tools = document.getElementById("tryTools"), go = document.getElementById("tryGo"), exWrap = document.getElementById("tryEx");
-  if (!input || !out || !tools) return;
-  var tool = "Write";
-
-  var PROTECTED = [
-    [/(^|\/)\.git\/hooks\//, ".git/hooks/"],
-    [/(^|\/)\.github\//, ".github/"],
-    [/(^|\/)\.gitlab-ci\.yml$/, ".gitlab-ci.yml"],
-    [/(^|\/)\.claude\//, ".claude/"],
-    [/(^|\/)(AGENTS|CLAUDE)\.md$/, "agent instructions"],
-    [/(^|\/)\.git\/config$/, ".git/config"],
-    [/(^|\/)hooks\.json$/, "hook config"]
+  var out = document.getElementById("tryOut"), exWrap = document.getElementById("tryEx");
+  if (!out || !exWrap) return;
+  var EX = [
+    { t: "Write to a protected location (e.g. git hooks)", v: "deny", r: "Protected — changes there need human review." },
+    { t: "Install an unlisted dependency", v: "deny", r: "Not on your approved list." },
+    { t: "Write outside the project", v: "deny", r: "Writes stay inside the project." },
+    { t: "A risky shell command (e.g. a force push)", v: "deny", r: "Matches a rule you set." },
+    { t: "Edit a source file in the project", v: "allow", r: "Nothing matched — it runs." }
   ];
-  function evalWrite(p) {
-    p = p.trim();
-    if (!p) return null;
-    if (p.charAt(0) === "/" && p.indexOf("/tmp/demo-project") !== 0)
-      return { outcome: "deny", kind: "outside_project", reason: p + " is outside the project directory.", fix: "Use a path inside the project." };
-    for (var i = 0; i < PROTECTED.length; i++)
-      if (PROTECTED[i][0].test(p))
-        return { outcome: "deny", kind: "protected_path", reason: p + " is a protected path (" + PROTECTED[i][1] + "); changes need human review.", fix: "Deliver the change as a patch file for human review." };
-    return { outcome: "allow", kind: "none", reason: "No rule matched; the write is allowed.", fix: "" };
-  }
-  function bad(why) { return { outcome: "deny", kind: "dangerous_command", reason: "Command matches a risky pattern: " + why, fix: "Rules are heuristic; adjust the command or get human review." }; }
-  function evalBash(c) {
-    c = c.trim(); if (!c) return null;
-    var m = c.match(/\b(npm|pnpm|yarn|pip|pip3)\s+(install|add)\b\s*([^\s]+)?/);
-    if (m && m[3]) return { outcome: "deny", kind: "dependency", reason: "Dependencies not on the allowlist: " + m[3] + ". The default policy ships an empty allowlist.", fix: "Approving a package is a policy change by a human." };
-    if (/\bsudo\b/.test(c)) return bad("sudo escalates privileges.");
-    if (/\bgit\s+push\b.*\s(-f|--force)\b/.test(c) || /\bgit\s+push\s+(-f|--force)\b/.test(c)) return bad("force push can rewrite shared history.");
-    if (/\brm\s+-[a-z]*r[a-z]*f?\b/.test(c)) return bad("recursive delete.");
-    if (/\b(LD_PRELOAD|LD_LIBRARY_PATH|NODE_OPTIONS)=/.test(c)) return bad("a loader/runtime override can bypass checks.");
-    if (/\bchmod\s+777\b/.test(c)) return bad("world-writable permissions.");
-    if (/curl[^|]*\|\s*(sh|bash)/.test(c)) return bad("piping a download straight into a shell.");
-    return { outcome: "allow", kind: "none", reason: "No rule matched; the command is allowed.", fix: "" };
-  }
-  function evaluate() {
-    var v = tool === "Bash" ? evalBash(input.value) : evalWrite(input.value);
-    if (!v) { out.hidden = true; return; }
+  function show(e) {
     out.hidden = false; out.textContent = "";
-    var deny = v.outcome === "deny";
+    var deny = e.v === "deny";
     var head = document.createElement("div"); head.className = "vhead";
     var b = document.createElement("span"); b.className = "vbadge " + (deny ? "deny" : "allow"); b.textContent = deny ? "BLOCKED" : "ALLOWED";
-    var k = document.createElement("span"); k.className = "vkind"; k.textContent = "rule_kind: " + v.kind + "  ·  exit " + (deny ? 2 : 0);
+    var k = document.createElement("span"); k.className = "vkind"; k.textContent = e.t;
     head.appendChild(b); head.appendChild(k); out.appendChild(head);
-    var r = document.createElement("p"); r.className = "vreason"; r.textContent = v.reason; out.appendChild(r);
-    if (v.fix) { var f = document.createElement("p"); f.className = "vfix"; f.textContent = "fix: " + v.fix; out.appendChild(f); }
+    var pp = document.createElement("p"); pp.className = "vreason"; pp.textContent = e.r; out.appendChild(pp);
   }
-  function setTool(t) {
-    tool = t;
-    Array.prototype.forEach.call(tools.children, function (x) { x.setAttribute("aria-checked", String(x.getAttribute("data-tool") === t)); });
-    input.placeholder = t === "Bash" ? "e.g. npm install left-pad" : "e.g. .git/hooks/pre-commit";
-  }
-  Array.prototype.forEach.call(tools.children, function (btn) {
-    btn.addEventListener("click", function () { setTool(btn.getAttribute("data-tool")); evaluate(); });
-  });
-  input.addEventListener("input", evaluate);
-  go.addEventListener("click", evaluate);
-  input.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); evaluate(); } });
-
-  var EX = [["Write", ".git/hooks/pre-commit"], ["Write", "/etc/hosts"], ["Write", "src/app.ts"], ["Bash", "npm install left-pad"], ["Bash", "git push --force"], ["Bash", "npm run build"]];
-  EX.forEach(function (e) {
-    var btn = document.createElement("button"); btn.type = "button"; btn.textContent = e[0] + ": " + e[1];
-    btn.addEventListener("click", function () { setTool(e[0]); input.value = e[1]; evaluate(); input.focus(); });
-    exWrap.appendChild(btn);
-  });
+  EX.forEach(function (e) { var btn = document.createElement("button"); btn.type = "button"; btn.textContent = e.t; btn.addEventListener("click", function () { show(e); }); exWrap.appendChild(btn); });
 })();
 </script>
 </body>
